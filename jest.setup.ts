@@ -8,6 +8,7 @@ const storageData: Record<string, unknown> = {};
 	},
 	runtime: {
 		getURL: jest.fn((path: string) => path),
+		getManifest: jest.fn(() => ({ version: '0.1.0' })),
 	},
 	storage: {
 		local: {
