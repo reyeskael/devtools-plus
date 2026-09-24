@@ -9,6 +9,11 @@ const storageData: Record<string, unknown> = {};
 	runtime: {
 		getURL: jest.fn((path: string) => path),
 		getManifest: jest.fn(() => ({ version: '0.1.0' })),
+		sendMessage: jest.fn(),
+		onMessage: {
+			addListener: jest.fn(),
+			removeListener: jest.fn(),
+		},
 	},
 	storage: {
 		local: {
@@ -20,5 +25,20 @@ const storageData: Record<string, unknown> = {};
 				callback?.();
 			}),
 		},
+		onChanged: {
+			addListener: jest.fn(),
+			removeListener: jest.fn(),
+		},
+	},
+	action: {
+		setBadgeText: jest.fn(),
+		setBadgeBackgroundColor: jest.fn(),
 	},
 } as unknown as typeof chrome;
+
+beforeEach(() => {
+	jest.clearAllMocks();
+	for (const key of Object.keys(storageData)) {
+		delete storageData[key];
+	}
+});
