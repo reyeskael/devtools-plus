@@ -12,21 +12,19 @@ import { openApp } from '../shared/chrome/openApp';
 
 const STORAGE_KEY = 'toolsState';
 
-function requireTool(id: string): Tool {
+const requireTool = (id: string): Tool => {
 	const tool = mockTools.find((candidate) => candidate.id === id);
 	if (!tool) {
 		throw new Error(`Expected mockTools to include a tool with id "${id}"`);
 	}
 	return tool;
-}
+};
 
-function rowSwitch(name: string) {
-	return screen.getByRole('switch', { name: new RegExp(`^${name} switch$`, 'i') });
-}
+const rowSwitch = (name: string) =>
+	screen.getByRole('switch', { name: new RegExp(`^${name} switch$`, 'i') });
 
-function pinButton(action: 'Pin' | 'Unpin', name: string) {
-	return screen.getByRole('button', { name: new RegExp(`^${action} ${name}$`, 'i') });
-}
+const pinButton = (action: 'Pin' | 'Unpin', name: string) =>
+	screen.getByRole('button', { name: new RegExp(`^${action} ${name}$`, 'i') });
 
 describe('Popup', () => {
 	beforeEach(() => {

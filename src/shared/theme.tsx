@@ -10,11 +10,9 @@ export const theme = createTheme({
 	},
 });
 
-export function AppThemeProvider({ children }: { children: ReactNode }) {
-	return (
-		<ThemeProvider theme={theme}>
-			<CssBaseline />
-			{children}
-		</ThemeProvider>
-	);
-}
+export const AppThemeProvider = ({ children }: { children: ReactNode }) => (
+	<ThemeProvider theme={theme}>
+		<CssBaseline />
+		{children}
+	</ThemeProvider>
+);

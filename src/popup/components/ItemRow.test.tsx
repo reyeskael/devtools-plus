@@ -3,16 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { ItemRow } from './ItemRow';
 import { Tool } from '../../shared/tools/types';
 
-function makeTool(overrides: Partial<Tool> = {}): Tool {
-	return {
-		id: 'network-monitor',
-		name: 'Network Monitor',
-		icon: 'network',
-		enabled: false,
-		pinned: false,
-		...overrides,
-	};
-}
+const makeTool = (overrides: Partial<Tool> = {}): Tool => ({
+	id: 'network-monitor',
+	name: 'Network Monitor',
+	icon: 'network',
+	enabled: false,
+	pinned: false,
+	...overrides,
+});
 
 describe('ItemRow', () => {
 	it('renders the icon resolved from the tool icon key', () => {

@@ -17,7 +17,7 @@ export interface UseToolsState {
 	togglePin: (id: string) => void;
 }
 
-export function useToolsState(): UseToolsState {
+export const useToolsState = (): UseToolsState => {
 	const [tools, setTools] = useState<Tool[]>(mockTools);
 	const [isRunning, setRunning] = useState(true);
 	const hasHydratedRef = useRef(false);
@@ -58,4 +58,4 @@ export function useToolsState(): UseToolsState {
 	}, []);
 
 	return { tools, isRunning, setRunning, toggleTool, togglePin };
-}
+};

@@ -6,7 +6,7 @@ interface PopupHeaderProps {
 	onRunningChange: (running: boolean) => void;
 }
 
-export function PopupHeader({ isRunning, onRunningChange }: PopupHeaderProps) {
+export const PopupHeader = ({ isRunning, onRunningChange }: PopupHeaderProps) => {
 	const statusLabel = isRunning ? 'DevTools Plus running' : 'DevTools Plus off';
 
 	return (
@@ -32,4 +32,4 @@ export function PopupHeader({ isRunning, onRunningChange }: PopupHeaderProps) {
 			</Button>
 		</Box>
 	);
-}
+};

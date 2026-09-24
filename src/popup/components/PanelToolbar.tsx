@@ -4,7 +4,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { openApp } from '../../shared/chrome/openApp';
 
-export function PanelToolbar() {
+export const PanelToolbar = () => {
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 	const open = Boolean(anchorEl);
 
@@ -37,4 +37,4 @@ export function PanelToolbar() {
 			</Menu>
 		</Box>
 	);
-}
+};

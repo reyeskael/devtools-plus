@@ -31,7 +31,7 @@ const PopupCard = styled(Paper, {
 	borderColor: dimmed ? theme.palette.grey[300] : theme.palette.divider,
 }));
 
-function getFilteredTools(tools: Tool[], activeTab: PopupTabKey, isRunning: boolean): Tool[] {
+const getFilteredTools = (tools: Tool[], activeTab: PopupTabKey, isRunning: boolean): Tool[] => {
 	if (activeTab === 'pinned') {
 		return tools.filter((tool) => tool.pinned);
 	}
@@ -39,14 +39,14 @@ function getFilteredTools(tools: Tool[], activeTab: PopupTabKey, isRunning: bool
 		return tools.filter((tool) => isRunning && tool.enabled);
 	}
 	return tools;
-}
+};
 
-function getEmptyState(
+const getEmptyState = (
 	activeTab: PopupTabKey,
 	isRunning: boolean,
 	onBrowseAll: () => void,
 	onTurnOn: () => void,
-) {
+) => {
 	if (activeTab === 'pinned') {
 		return (
 			<EmptyState
@@ -78,9 +78,9 @@ function getEmptyState(
 		);
 	}
 	return null;
-}
+};
 
-export function Popup() {
+export const Popup = () => {
 	const { tools, isRunning, setRunning, toggleTool, togglePin } = useToolsState();
 	const [activeTab, setActiveTab] = useState<PopupTabKey>('pinned');
 
@@ -126,4 +126,4 @@ export function Popup() {
 			</Typography>
 		</PopupRoot>
 	);
-}
+};

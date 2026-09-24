@@ -11,7 +11,7 @@ interface ItemRowProps {
 	onTogglePin: (id: string) => void;
 }
 
-export function ItemRow({ tool, isRunning, onToggleEnabled, onTogglePin }: ItemRowProps) {
+export const ItemRow = ({ tool, isRunning, onToggleEnabled, onTogglePin }: ItemRowProps) => {
 	const PinIcon = tool.pinned ? PushPinIcon : PushPinOutlinedIcon;
 	const pinLabel = `${tool.pinned ? 'Unpin' : 'Pin'} ${tool.name}`;
 	const switchLabel = `${tool.name} switch`;
@@ -35,4 +35,4 @@ export function ItemRow({ tool, isRunning, onToggleEnabled, onTogglePin }: ItemR
 			/>
 		</ListItem>
 	);
-}
+};
