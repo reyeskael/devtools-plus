@@ -6,41 +6,38 @@ jest.mock('../../shared/chrome/openApp', () => ({
 	openApp: jest.fn(),
 }));
 
-import { openApp } from '../../shared/chrome/openApp';
+import { openApp, type AppPage } from '../../shared/chrome/openApp';
 
 describe('PanelToolbar', () => {
-	it('renders the title prop as the section heading', () => {
-		render(<PanelToolbar title="My Title" addLabel="Add" onAdd={jest.fn()} />);
-		expect(screen.getByText('My Title')).toBeInTheDocument();
-	});
-
-	it('renders the Add button with the addLabel text and OpenInNewIcon', () => {
-		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
-		const addButton = screen.getByRole('button', { name: 'Add Mock' });
+	it('renders the Add button with its label and OpenInNewIcon', () => {
+		render(<PanelToolbar page="mock-api" />);
+		const addButton = screen.getByRole('button', { name: 'Add' });
 		expect(addButton).toBeInTheDocument();
 		expect(screen.getByTestId('OpenInNewIcon')).toBeInTheDocument();
 	});
 
-	it('calls onAdd exactly once and does not call openApp when the Add button is clicked', async () => {
-		const onAdd = jest.fn();
-		const openAppMock = openApp as jest.Mock;
-		openAppMock.mockClear();
+	it.each<AppPage>(['mock-api', 'http-rules'])(
+		'calls openApp exactly once with the "%s" page when the Add button is clicked',
+		async (page) => {
+			const openAppMock = openApp as jest.Mock;
+			openAppMock.mockClear();
 
-		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={onAdd} />);
-		await userEvent.click(screen.getByRole('button', { name: 'Add Mock' }));
+			render(<PanelToolbar page={page} />);
+			await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
-		expect(onAdd).toHaveBeenCalledTimes(1);
-		expect(openAppMock).not.toHaveBeenCalled();
-	});
+			expect(openAppMock).toHaveBeenCalledTimes(1);
+			expect(openAppMock).toHaveBeenCalledWith(page);
+		},
+	);
 
 	it('renders the Add button alongside the Actions button', () => {
-		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
-		expect(screen.getByRole('button', { name: 'Add Mock' })).toBeInTheDocument();
+		render(<PanelToolbar page="mock-api" />);
+		expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Open actions menu' })).toBeInTheDocument();
 	});
 
 	it('renders the Actions button closed by default with ExpandMoreIcon and the correct aria-label', () => {
-		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
+		render(<PanelToolbar page="mock-api" />);
 		const button = screen.getByRole('button', { name: 'Open actions menu' });
 		expect(button).toBeInTheDocument();
 		expect(button).toHaveTextContent('Actions');
@@ -50,7 +47,7 @@ describe('PanelToolbar', () => {
 	});
 
 	it('opens the menu, flips the chevron, and updates the aria-label when the Actions button is clicked', async () => {
-		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
+		render(<PanelToolbar page="mock-api" />);
 		const button = screen.getByRole('button', { name: 'Open actions menu' });
 		await userEvent.click(button);
 
@@ -63,7 +60,7 @@ describe('PanelToolbar', () => {
 	});
 
 	it('renders the expected menu items in order, with a divider before the last item', async () => {
-		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
+		render(<PanelToolbar page="mock-api" />);
 		await userEvent.click(screen.getByRole('button', { name: 'Open actions menu' }));
 
 		const menuItems = screen.getAllByRole('menuitem');
@@ -81,27 +78,27 @@ describe('PanelToolbar', () => {
 		const keyboardShortcutsIndex = children.findIndex((el) =>
 			el.textContent?.includes('Keyboard shortcuts'),
 		);
-		const openFullAppIndex = children.findIndex((el) => el.textContent?.includes('Open full app'));
+		const openFullAppIndex = children.findIndex((el) =>
+			el.textContent?.includes('Open full app'),
+		);
 
 		expect(separatorIndex).toBeGreaterThan(keyboardShortcutsIndex);
 		expect(separatorIndex).toBeLessThan(openFullAppIndex);
 	});
 
-	it.each([
-		['Manage tools'],
-		['Settings'],
-		['Keyboard shortcuts'],
-		['Open full app'],
-	])('calls openApp exactly once and closes the menu when "%s" is clicked', async (label) => {
-		const openAppMock = openApp as jest.Mock;
-		openAppMock.mockClear();
+	it.each([['Manage tools'], ['Settings'], ['Keyboard shortcuts'], ['Open full app']])(
+		'calls openApp exactly once and closes the menu when "%s" is clicked',
+		async (label) => {
+			const openAppMock = openApp as jest.Mock;
+			openAppMock.mockClear();
 
-		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
-		await userEvent.click(screen.getByRole('button', { name: 'Open actions menu' }));
-		await userEvent.click(screen.getByRole('menuitem', { name: label }));
+			render(<PanelToolbar page="mock-api" />);
+			await userEvent.click(screen.getByRole('button', { name: 'Open actions menu' }));
+			await userEvent.click(screen.getByRole('menuitem', { name: label }));
 
-		expect(openAppMock).toHaveBeenCalledTimes(1);
-		expect(screen.queryByRole('menu')).not.toBeInTheDocument();
-		expect(screen.getByRole('button', { name: 'Open actions menu' })).toBeInTheDocument();
-	});
+			expect(openAppMock).toHaveBeenCalledTimes(1);
+			expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+			expect(screen.getByRole('button', { name: 'Open actions menu' })).toBeInTheDocument();
+		},
+	);
 });

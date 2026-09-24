@@ -36,7 +36,6 @@ const PopupCard = styled(Paper, {
 interface TabConfig {
 	kind: PopupItem['kind'];
 	page: AppPage;
-	title: string;
 	emptyHeadline: string;
 	emptyBody: string;
 	emptyActionLabel: string;
@@ -46,7 +45,6 @@ const TAB_CONFIG: Record<PopupTabKey, TabConfig> = {
 	'mock-responses': {
 		kind: 'mock-response',
 		page: 'mock-api',
-		title: 'API Mock',
 		emptyHeadline: 'No mock responses yet',
 		emptyBody: 'Add a mock response in the full app to get started.',
 		emptyActionLabel: 'Add mock response',
@@ -54,7 +52,6 @@ const TAB_CONFIG: Record<PopupTabKey, TabConfig> = {
 	'http-rules': {
 		kind: 'http-rule',
 		page: 'http-rules',
-		title: 'HTTP Rules',
 		emptyHeadline: 'No HTTP rules yet',
 		emptyBody: 'Add an HTTP rule in the full app to get started.',
 		emptyActionLabel: 'Add HTTP rule',
@@ -94,11 +91,7 @@ export const Popup = () => {
 		<PopupRoot>
 			<PopupHeader isRunning={isRunning} onRunningChange={setRunning} />
 			<PopupCard variant="outlined" dimmed={!isRunning}>
-				<PanelToolbar
-					title={activeTabConfig.title}
-					addLabel="Add"
-					onAdd={() => openApp(activeTabConfig.page)}
-				/>
+				<PanelToolbar page={activeTabConfig.page} />
 				<PopupTabs value={activeTab} onChange={setActiveTab} />
 				<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
 					{itemRows.length === 0 ? (

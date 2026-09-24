@@ -1,17 +1,15 @@
-import { Box, Button, Divider, Menu, MenuItem, Typography } from '@mui/material';
+import { Box, Button, Divider, Menu, MenuItem } from '@mui/material';
 import { useState } from 'react';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { openApp } from '../../shared/chrome/openApp';
+import { openApp, type AppPage } from '../../shared/chrome/openApp';
 
 interface PanelToolbarProps {
-	title: string;
-	addLabel: string;
-	onAdd: () => void;
+	page: AppPage;
 }
 
-export const PanelToolbar = ({ title, addLabel, onAdd }: PanelToolbarProps) => {
+export const PanelToolbar = ({ page }: PanelToolbarProps) => {
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 	const open = Boolean(anchorEl);
 
@@ -25,11 +23,15 @@ export const PanelToolbar = ({ title, addLabel, onAdd }: PanelToolbarProps) => {
 	};
 
 	return (
-		<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-			<Typography variant="subtitle1">{title}</Typography>
+		<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
 			<Box sx={{ display: 'flex', gap: 1 }}>
-				<Button variant="contained" size="small" startIcon={<OpenInNewIcon />} onClick={onAdd}>
-					{addLabel}
+				<Button
+					variant="contained"
+					size="small"
+					startIcon={<OpenInNewIcon />}
+					onClick={() => openApp(page)}
+				>
+					Add
 				</Button>
 				<Button
 					variant="outlined"
