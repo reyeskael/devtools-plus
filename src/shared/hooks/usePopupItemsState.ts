@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { seedHttpRules, seedMockResponses } from '../items/seedItems';
+import { POPUP_ITEMS_STORAGE_KEY as STORAGE_KEY } from '../storage/keys';
 import type { HttpRuleItem, MockResponseItem, PopupItem } from '../items/types';
-
-const STORAGE_KEY = 'popupItemsState';
 
 interface StoredPopupItemsState {
 	mockResponses: MockResponseItem[];

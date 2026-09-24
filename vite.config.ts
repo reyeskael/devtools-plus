@@ -4,7 +4,15 @@ import { crx } from '@crxjs/vite-plugin';
 import manifest from './manifest.config';
 
 export default defineConfig({
-	plugins: [react(), crx({ manifest })],
+	plugins: [
+		react(),
+		crx({
+			manifest,
+			contentScripts: {
+				standaloneFiles: ['src/content/interceptor/index.ts'],
+			},
+		}),
+	],
 	build: {
 		rollupOptions: {
 			input: {

@@ -26,4 +26,18 @@ export default defineManifest({
 		type: 'module',
 	},
 	permissions: ['storage', 'tabs'],
+	host_permissions: ['<all_urls>'],
+	content_scripts: [
+		{
+			js: ['src/content/bridge/index.ts'],
+			matches: ['<all_urls>'],
+			run_at: 'document_start',
+		},
+		{
+			js: ['src/content/interceptor/index.ts'],
+			matches: ['<all_urls>'],
+			run_at: 'document_start',
+			world: 'MAIN',
+		},
+	],
 });
