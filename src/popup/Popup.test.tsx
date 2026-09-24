@@ -19,7 +19,7 @@ const deleteButton = (name: string) =>
 
 const addButton = () => screen.getByRole('button', { name: /^add$/i });
 
-const mockResponsesTab = () => screen.getByRole('tab', { name: /api response mock/i });
+const mockResponsesTab = () => screen.getByRole('tab', { name: /api mock/i });
 
 const httpRulesTab = () => screen.getByRole('tab', { name: /http rules/i });
 
@@ -64,11 +64,11 @@ describe('Popup', () => {
 			render(<Popup />);
 			const tabs = screen.getAllByRole('tab');
 			expect(tabs).toHaveLength(2);
-			expect(tabs[0]).toHaveTextContent('API Response Mock');
+			expect(tabs[0]).toHaveTextContent('API Mock');
 			expect(tabs[1]).toHaveTextContent('HTTP Rules');
 		});
 
-		it('selects the API Response Mock tab by default', () => {
+		it('selects the API Mock tab by default', () => {
 			render(<Popup />);
 			expect(mockResponsesTab()).toHaveAttribute('aria-selected', 'true');
 			expect(httpRulesTab()).toHaveAttribute('aria-selected', 'false');

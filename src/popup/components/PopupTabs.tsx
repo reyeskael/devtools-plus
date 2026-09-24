@@ -12,7 +12,7 @@ interface PopupTabsProps {
 export const PopupTabs = ({ value, onChange }: PopupTabsProps) => (
 	<Tabs value={value} onChange={(_, newValue) => onChange(newValue)} aria-label="Tool tabs">
 		<Tab
-			label="API Response Mock"
+			label="API Mock"
 			value="mock-responses"
 			icon={<ApiOutlinedIcon />}
 			iconPosition="start"

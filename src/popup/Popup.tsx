@@ -46,7 +46,7 @@ const TAB_CONFIG: Record<PopupTabKey, TabConfig> = {
 	'mock-responses': {
 		kind: 'mock-response',
 		page: 'mock-api',
-		title: 'API Response Mock',
+		title: 'API Mock',
 		emptyHeadline: 'No mock responses yet',
 		emptyBody: 'Add a mock response in the full app to get started.',
 		emptyActionLabel: 'Add mock response',

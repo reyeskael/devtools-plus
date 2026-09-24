@@ -9,7 +9,8 @@ export interface MockResponseItem extends PopupItemBase {
 	method: string;
 	urlPattern: string;
 	statusCode: number;
-	body?: string;
+	statusText?: string;
+	body?: unknown;
 }
 
 export interface HttpRuleItem extends PopupItemBase {

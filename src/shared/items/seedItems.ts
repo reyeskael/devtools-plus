@@ -1,35 +1,7 @@
+import sampleData from './mocks/sample-data.json';
 import type { HttpRuleItem, MockResponseItem } from './types';
 
-export const seedMockResponses: MockResponseItem[] = [
-	{
-		id: 'mock-users-list',
-		name: 'Users list',
-		kind: 'mock-response',
-		enabled: true,
-		method: 'GET',
-		urlPattern: '/api/users',
-		statusCode: 200,
-	},
-	{
-		id: 'mock-create-order',
-		name: 'Create order failure',
-		kind: 'mock-response',
-		enabled: false,
-		method: 'POST',
-		urlPattern: '/api/orders',
-		statusCode: 500,
-		body: '{ "error": "Internal Server Error" }',
-	},
-	{
-		id: 'mock-delete-account',
-		name: 'Delete account',
-		kind: 'mock-response',
-		enabled: true,
-		method: 'DELETE',
-		urlPattern: '/api/accounts/*',
-		statusCode: 204,
-	},
-];
+export const seedMockResponses = sampleData as MockResponseItem[];
 
 export const seedHttpRules: HttpRuleItem[] = [
 	{

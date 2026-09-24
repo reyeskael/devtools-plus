@@ -1,0 +1,35 @@
+[
+	{
+		"id": "mock-api-200",
+		"name": "Mock API - 200",
+		"kind": "mock-response",
+		"enabled": true,
+		"method": "GET",
+		"urlPattern": "/api/v1/mock-api",
+		"statusCode": 200,
+		"statusText": "OK",
+		"body": {
+			"reports": []
+		}
+	},
+	{
+		"id": "mock-api-404",
+		"name": "Mock API - 404",
+		"kind": "mock-response",
+		"enabled": false,
+		"method": "GET",
+		"urlPattern": "/api/v1/mock-api",
+		"statusCode": 404,
+		"statusText": "Not Found"
+	},
+	{
+		"id": "mock-api-500",
+		"name": "Mock API - 500",
+		"kind": "mock-response",
+		"enabled": false,
+		"method": "GET",
+		"urlPattern": "/api/v1/mock-api",
+		"statusCode": 500,
+		"statusText": "Internal Server Error"
+	}
+]
