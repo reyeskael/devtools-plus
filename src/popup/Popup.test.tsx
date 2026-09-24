@@ -1,8 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Popup } from './Popup';
-import { mockTools } from '../shared/tools/mockTools';
-import type { Tool } from '../shared/tools/types';
+import { seedHttpRules, seedMockResponses } from '../shared/items/seedItems';
 
 jest.mock('../shared/chrome/openApp', () => ({
 	openApp: jest.fn(),
@@ -10,21 +9,29 @@ jest.mock('../shared/chrome/openApp', () => ({
 
 import { openApp } from '../shared/chrome/openApp';
 
-const STORAGE_KEY = 'toolsState';
-
-const requireTool = (id: string): Tool => {
-	const tool = mockTools.find((candidate) => candidate.id === id);
-	if (!tool) {
-		throw new Error(`Expected mockTools to include a tool with id "${id}"`);
-	}
-	return tool;
-};
+const STORAGE_KEY = 'popupItemsState';
 
 const rowSwitch = (name: string) =>
 	screen.getByRole('switch', { name: new RegExp(`^${name} switch$`, 'i') });
 
-const pinButton = (action: 'Pin' | 'Unpin', name: string) =>
-	screen.getByRole('button', { name: new RegExp(`^${action} ${name}$`, 'i') });
+const deleteButton = (name: string) =>
+	screen.getByRole('button', { name: new RegExp(`^Delete ${name}$`, 'i') });
+
+const addButton = () => screen.getByRole('button', { name: /^add$/i });
+
+const mockResponsesTab = () => screen.getByRole('tab', { name: /api response mock/i });
+
+const httpRulesTab = () => screen.getByRole('tab', { name: /http rules/i });
+
+const masterSwitch = () => screen.getByRole('switch', { name: /master switch/i });
+
+const expectRowSwitchChecked = (name: string, checked: boolean) => {
+	if (checked) {
+		expect(rowSwitch(name)).toBeChecked();
+	} else {
+		expect(rowSwitch(name)).not.toBeChecked();
+	}
+};
 
 describe('Popup', () => {
 	beforeEach(() => {
@@ -40,10 +47,11 @@ describe('Popup', () => {
 		expect(screen.getByRole('button', { name: /open app/i })).toBeInTheDocument();
 	});
 
-	it('calls openApp when clicked', async () => {
+	it('calls openApp when the Open App button is clicked', async () => {
 		render(<Popup />);
 		await userEvent.click(screen.getByRole('button', { name: /open app/i }));
 		expect(openApp).toHaveBeenCalledTimes(1);
+		expect(openApp).toHaveBeenCalledWith();
 	});
 
 	it('renders the manifest version as a caption', () => {
@@ -51,109 +59,235 @@ describe('Popup', () => {
 		expect(screen.getByText('v0.1.0')).toBeInTheDocument();
 	});
 
-	describe('default view', () => {
-		it('selects the Pinned tab and lists only the seeded pinned tools', () => {
+	describe('tabs', () => {
+		it('renders exactly two tabs with the correct labels', () => {
+			render(<Popup />);
+			const tabs = screen.getAllByRole('tab');
+			expect(tabs).toHaveLength(2);
+			expect(tabs[0]).toHaveTextContent('API Response Mock');
+			expect(tabs[1]).toHaveTextContent('HTTP Rules');
+		});
+
+		it('selects the API Response Mock tab by default', () => {
+			render(<Popup />);
+			expect(mockResponsesTab()).toHaveAttribute('aria-selected', 'true');
+			expect(httpRulesTab()).toHaveAttribute('aria-selected', 'false');
+		});
+	});
+
+	describe('cross-tab scoping', () => {
+		it('shows the seeded mock responses only on the mock-responses tab', async () => {
 			render(<Popup />);
 
-			expect(screen.getByRole('tab', { name: /pinned/i })).toHaveAttribute(
-				'aria-selected',
-				'true',
-			);
-
-			const pinnedTools = mockTools.filter((tool) => tool.pinned);
-			const unpinnedTools = mockTools.filter((tool) => !tool.pinned);
-			expect(pinnedTools.length).toBeGreaterThan(0);
-
-			for (const tool of pinnedTools) {
-				expect(screen.getByText(tool.name)).toBeInTheDocument();
+			for (const item of seedMockResponses) {
+				expect(screen.getByText(item.name)).toBeInTheDocument();
 			}
-			for (const tool of unpinnedTools) {
-				expect(screen.queryByText(tool.name)).not.toBeInTheDocument();
+			for (const item of seedHttpRules) {
+				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
+			}
+
+			await userEvent.click(httpRulesTab());
+
+			for (const item of seedMockResponses) {
+				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
+			}
+		});
+
+		it('shows the seeded HTTP rules only on the http-rules tab', async () => {
+			render(<Popup />);
+			await userEvent.click(httpRulesTab());
+
+			for (const item of seedHttpRules) {
+				expect(screen.getByText(item.name)).toBeInTheDocument();
+			}
+			for (const item of seedMockResponses) {
+				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
+			}
+
+			await userEvent.click(mockResponsesTab());
+
+			for (const item of seedHttpRules) {
+				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
+			}
+			for (const item of seedMockResponses) {
+				expect(screen.getByText(item.name)).toBeInTheDocument();
 			}
 		});
 	});
 
-	describe('cross-tab vanish', () => {
-		it('removes a tool from the Active tab immediately when it is switched off', async () => {
+	describe('add handler', () => {
+		it('calls openApp with "mock-api" when Add is clicked on the mock-responses tab', async () => {
 			render(<Popup />);
-			await userEvent.click(screen.getByRole('tab', { name: /active/i }));
+			await userEvent.click(addButton());
+			expect(openApp).toHaveBeenCalledTimes(1);
+			expect(openApp).toHaveBeenCalledWith('mock-api');
+		});
 
-			const enabledTools = mockTools.filter((tool) => tool.enabled);
-			expect(enabledTools.length).toBeGreaterThan(0);
-			for (const tool of enabledTools) {
-				expect(screen.getByText(tool.name)).toBeInTheDocument();
+		it('calls openApp with "http-rules" when Add is clicked on the http-rules tab', async () => {
+			render(<Popup />);
+			await userEvent.click(httpRulesTab());
+			await userEvent.click(addButton());
+			expect(openApp).toHaveBeenCalledTimes(1);
+			expect(openApp).toHaveBeenCalledWith('http-rules');
+		});
+
+		it('calls openApp with "mock-api" from the empty-state action once every mock response is deleted', async () => {
+			render(<Popup />);
+			for (const item of seedMockResponses) {
+				await userEvent.click(deleteButton(item.name));
 			}
 
-			const target = requireTool('network-inspector');
-			expect(target.enabled).toBe(true);
+			await userEvent.click(screen.getByRole('button', { name: /add mock response/i }));
 
+			expect(openApp).toHaveBeenCalledWith('mock-api');
+		});
+
+		it('calls openApp with "http-rules" from the empty-state action once every HTTP rule is deleted', async () => {
+			render(<Popup />);
+			await userEvent.click(httpRulesTab());
+			for (const item of seedHttpRules) {
+				await userEvent.click(deleteButton(item.name));
+			}
+
+			await userEvent.click(screen.getByRole('button', { name: /add http rule/i }));
+
+			expect(openApp).toHaveBeenCalledWith('http-rules');
+		});
+	});
+
+	describe('empty states', () => {
+		it('shows the mock-responses empty-state copy once every mock response is deleted', async () => {
+			render(<Popup />);
+			for (const item of seedMockResponses) {
+				await userEvent.click(deleteButton(item.name));
+			}
+
+			expect(screen.getByText('No mock responses yet')).toBeInTheDocument();
+			expect(
+				screen.getByText('Add a mock response in the full app to get started.'),
+			).toBeInTheDocument();
+		});
+
+		it('shows the http-rules empty-state copy once every HTTP rule is deleted', async () => {
+			render(<Popup />);
+			await userEvent.click(httpRulesTab());
+			for (const item of seedHttpRules) {
+				await userEvent.click(deleteButton(item.name));
+			}
+
+			expect(screen.getByText('No HTTP rules yet')).toBeInTheDocument();
+			expect(
+				screen.getByText('Add an HTTP rule in the full app to get started.'),
+			).toBeInTheDocument();
+		});
+
+		it('uses distinct empty-state copy for each tab', async () => {
+			render(<Popup />);
+			for (const item of seedMockResponses) {
+				await userEvent.click(deleteButton(item.name));
+			}
+			const mockResponsesHeadline = screen.getByText('No mock responses yet').textContent;
+			const mockResponsesBody = screen.getByText(
+				'Add a mock response in the full app to get started.',
+			).textContent;
+
+			await userEvent.click(httpRulesTab());
+			for (const item of seedHttpRules) {
+				await userEvent.click(deleteButton(item.name));
+			}
+			const httpRulesHeadline = screen.getByText('No HTTP rules yet').textContent;
+			const httpRulesBody = screen.getByText(
+				'Add an HTTP rule in the full app to get started.',
+			).textContent;
+
+			expect(mockResponsesHeadline).not.toBe(httpRulesHeadline);
+			expect(mockResponsesBody).not.toBe(httpRulesBody);
+		});
+	});
+
+	describe('toggling scoped to the active tab', () => {
+		it('toggles only the targeted mock-response item, leaving the rest of that tab and the http-rules tab untouched', async () => {
+			render(<Popup />);
+			const target = seedMockResponses[0];
+			const others = seedMockResponses.filter((item) => item.id !== target.id);
+
+			expectRowSwitchChecked(target.name, target.enabled);
 			await userEvent.click(rowSwitch(target.name));
+			expectRowSwitchChecked(target.name, !target.enabled);
 
-			expect(screen.queryByText(target.name)).not.toBeInTheDocument();
-			// The still-enabled tools remain, confirming Active membership is
-			// re-derived rather than the whole tab clearing out.
-			const stillEnabled = enabledTools.filter((tool) => tool.id !== target.id);
-			for (const tool of stillEnabled) {
-				expect(screen.getByText(tool.name)).toBeInTheDocument();
+			for (const item of others) {
+				expectRowSwitchChecked(item.name, item.enabled);
+			}
+
+			await userEvent.click(httpRulesTab());
+			for (const item of seedHttpRules) {
+				expectRowSwitchChecked(item.name, item.enabled);
+			}
+		});
+
+		it('toggles only the targeted http-rule item, leaving the rest of that tab and the mock-responses tab untouched', async () => {
+			render(<Popup />);
+			await userEvent.click(httpRulesTab());
+
+			const target = seedHttpRules[0];
+			const others = seedHttpRules.filter((item) => item.id !== target.id);
+
+			expectRowSwitchChecked(target.name, target.enabled);
+			await userEvent.click(rowSwitch(target.name));
+			expectRowSwitchChecked(target.name, !target.enabled);
+
+			for (const item of others) {
+				expectRowSwitchChecked(item.name, item.enabled);
+			}
+
+			await userEvent.click(mockResponsesTab());
+			for (const item of seedMockResponses) {
+				expectRowSwitchChecked(item.name, item.enabled);
 			}
 		});
 	});
 
-	describe('pinning', () => {
-		it('adds a tool to the Pinned tab once it is pinned', async () => {
+	describe('deleting scoped to the active tab', () => {
+		it('deletes only the targeted mock-response item, leaving the http-rules tab untouched', async () => {
 			render(<Popup />);
-			const target = requireTool('console-logger');
-			expect(target.pinned).toBe(false);
+			const target = seedMockResponses[0];
+			const remaining = seedMockResponses.filter((item) => item.id !== target.id);
 
-			await userEvent.click(screen.getByRole('tab', { name: /all tools/i }));
-			await userEvent.click(pinButton('Pin', target.name));
-
-			await userEvent.click(screen.getByRole('tab', { name: /pinned/i }));
-			expect(screen.getByText(target.name)).toBeInTheDocument();
-		});
-
-		it('removes a tool from the Pinned tab once it is unpinned', async () => {
-			render(<Popup />);
-			const target = requireTool('network-inspector');
-			expect(target.pinned).toBe(true);
-			expect(screen.getByText(target.name)).toBeInTheDocument();
-
-			await userEvent.click(pinButton('Unpin', target.name));
+			await userEvent.click(deleteButton(target.name));
 
 			expect(screen.queryByText(target.name)).not.toBeInTheDocument();
+			for (const item of remaining) {
+				expect(screen.getByText(item.name)).toBeInTheDocument();
+			}
+
+			await userEvent.click(httpRulesTab());
+			for (const item of seedHttpRules) {
+				expect(screen.getByText(item.name)).toBeInTheDocument();
+			}
+		});
+
+		it('deletes only the targeted http-rule item, leaving the mock-responses tab untouched', async () => {
+			render(<Popup />);
+			await userEvent.click(httpRulesTab());
+
+			const target = seedHttpRules[0];
+			const remaining = seedHttpRules.filter((item) => item.id !== target.id);
+
+			await userEvent.click(deleteButton(target.name));
+
+			expect(screen.queryByText(target.name)).not.toBeInTheDocument();
+			for (const item of remaining) {
+				expect(screen.getByText(item.name)).toBeInTheDocument();
+			}
+
+			await userEvent.click(mockResponsesTab());
+			for (const item of seedMockResponses) {
+				expect(screen.getByText(item.name)).toBeInTheDocument();
+			}
 		});
 	});
 
 	describe('master switch off/on', () => {
-		it('disables row switches while off', async () => {
-			render(<Popup />);
-			const target = requireTool('network-inspector');
-			expect(rowSwitch(target.name)).not.toBeDisabled();
-
-			await userEvent.click(screen.getByRole('switch', { name: /master switch/i }));
-
-			expect(rowSwitch(target.name)).toBeDisabled();
-		});
-
-		it('preserves per-tool pinned state across an off -> on cycle', async () => {
-			render(<Popup />);
-			const target = requireTool('console-logger');
-			expect(target.pinned).toBe(false);
-
-			await userEvent.click(screen.getByRole('tab', { name: /all tools/i }));
-			await userEvent.click(pinButton('Pin', target.name));
-			expect(pinButton('Unpin', target.name)).toBeInTheDocument();
-
-			const masterSwitch = screen.getByRole('switch', { name: /master switch/i });
-			await userEvent.click(masterSwitch);
-			expect(masterSwitch).not.toBeChecked();
-			await userEvent.click(masterSwitch);
-			expect(masterSwitch).toBeChecked();
-
-			await userEvent.click(screen.getByRole('tab', { name: /pinned/i }));
-			expect(screen.getByText(target.name)).toBeInTheDocument();
-		});
-
 		it('dims the card once the master switch is off', async () => {
 			render(<Popup />);
 
@@ -168,86 +302,39 @@ describe('Popup', () => {
 			const runningBackgroundColor = getComputedStyle(card).backgroundColor;
 			const runningBorderColor = getComputedStyle(card).borderColor;
 
-			await userEvent.click(screen.getByRole('switch', { name: /master switch/i }));
+			await userEvent.click(masterSwitch());
 
 			expect(getComputedStyle(card).backgroundColor).not.toBe(runningBackgroundColor);
 			expect(getComputedStyle(card).borderColor).not.toBe(runningBorderColor);
 		});
-	});
 
-	describe('empty states', () => {
-		it('shows "nothing pinned" once every pinned tool is unpinned, and its action switches to All tools', async () => {
+		it('disables row switches while off and re-enables them once switched back on', async () => {
 			render(<Popup />);
-			const pinnedTools = mockTools.filter((tool) => tool.pinned);
+			const target = seedMockResponses[0];
+			expect(rowSwitch(target.name)).not.toBeDisabled();
 
-			for (const tool of pinnedTools) {
-				await userEvent.click(pinButton('Unpin', tool.name));
-			}
+			await userEvent.click(masterSwitch());
+			expect(rowSwitch(target.name)).toBeDisabled();
 
-			expect(screen.getByText('Nothing pinned yet')).toBeInTheDocument();
-			expect(
-				screen.getByText('Pin your favorite tools for quick access.'),
-			).toBeInTheDocument();
-
-			await userEvent.click(screen.getByRole('button', { name: /browse all tools/i }));
-
-			expect(screen.getByRole('tab', { name: /all tools/i })).toHaveAttribute(
-				'aria-selected',
-				'true',
-			);
-			for (const tool of mockTools) {
-				expect(screen.getByText(tool.name)).toBeInTheDocument();
-			}
+			await userEvent.click(masterSwitch());
+			expect(rowSwitch(target.name)).not.toBeDisabled();
 		});
 
-		it('shows "no active tools" once every enabled tool is switched off on the Active tab, and its action switches to All tools', async () => {
+		it('preserves per-item toggled state across an off -> on cycle', async () => {
 			render(<Popup />);
-			await userEvent.click(screen.getByRole('tab', { name: /active/i }));
+			const target = seedMockResponses[0];
+			const toggledState = !target.enabled;
 
-			const enabledTools = mockTools.filter((tool) => tool.enabled);
-			for (const tool of enabledTools) {
-				await userEvent.click(rowSwitch(tool.name));
-			}
+			await userEvent.click(rowSwitch(target.name));
+			expectRowSwitchChecked(target.name, toggledState);
 
-			expect(screen.getByText('No active tools')).toBeInTheDocument();
-			expect(
-				screen.getByText('Turn on a tool to see it appear here.'),
-			).toBeInTheDocument();
+			const master = masterSwitch();
+			await userEvent.click(master);
+			expect(master).not.toBeChecked();
+			await userEvent.click(master);
+			expect(master).toBeChecked();
 
-			await userEvent.click(screen.getByRole('button', { name: /view all tools/i }));
-
-			expect(screen.getByRole('tab', { name: /all tools/i })).toHaveAttribute(
-				'aria-selected',
-				'true',
-			);
-		});
-
-		it('shows "DevTools Plus is off" while the master switch is off, and its action turns it back on without merely switching tabs', async () => {
-			render(<Popup />);
-			await userEvent.click(screen.getByRole('tab', { name: /active/i }));
-			await userEvent.click(screen.getByRole('switch', { name: /master switch/i }));
-
-			expect(screen.getByText('DevTools Plus is off')).toBeInTheDocument();
-			expect(
-				screen.getByText('Turn the extension back on to use your tools.'),
-			).toBeInTheDocument();
-
-			await userEvent.click(screen.getByRole('button', { name: /^turn on$/i }));
-
-			expect(screen.getByRole('switch', { name: /master switch/i })).toBeChecked();
-			expect(screen.queryByText('DevTools Plus is off')).not.toBeInTheDocument();
-
-			// Still on the Active tab (the action didn't just navigate away), and
-			// it now shows the previously-enabled tools instead of the empty state.
-			expect(screen.getByRole('tab', { name: /active/i })).toHaveAttribute(
-				'aria-selected',
-				'true',
-			);
-			const enabledTools = mockTools.filter((tool) => tool.enabled);
-			for (const tool of enabledTools) {
-				expect(screen.getByText(tool.name)).toBeInTheDocument();
-				expect(rowSwitch(tool.name)).not.toBeDisabled();
-			}
+			expectRowSwitchChecked(target.name, toggledState);
 		});
 	});
 });

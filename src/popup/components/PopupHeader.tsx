@@ -27,7 +27,7 @@ export const PopupHeader = ({ isRunning, onRunningChange }: PopupHeaderProps) =>
 					{statusLabel}
 				</Typography>
 			</Box>
-			<Button variant="contained" onClick={openApp}>
+			<Button variant="contained" onClick={() => openApp()}>
 				Open App
 			</Button>
 		</Box>
