@@ -4,9 +4,11 @@ interface PopupItemBase {
 	enabled: boolean;
 }
 
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
+
 export interface MockResponseItem extends PopupItemBase {
 	kind: 'mock-response';
-	method: string;
+	method: HttpMethod;
 	urlPattern: string;
 	statusCode: number;
 	statusText?: string;
