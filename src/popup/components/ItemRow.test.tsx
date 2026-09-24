@@ -1,115 +1,102 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ItemRow } from './ItemRow';
-import { Tool } from '../../shared/tools/types';
+import { ItemRow, ItemRowViewModel } from './ItemRow';
 
-const makeTool = (overrides: Partial<Tool> = {}): Tool => ({
+const makeItem = (overrides: Partial<ItemRowViewModel> = {}): ItemRowViewModel => ({
 	id: 'network-monitor',
-	name: 'Network Monitor',
-	icon: 'network',
+	label: 'Network Monitor',
+	secondary: 'Monitors network traffic',
 	enabled: false,
-	pinned: false,
 	...overrides,
 });
 
 describe('ItemRow', () => {
-	it('renders the icon resolved from the tool icon key', () => {
+	it('renders the item label as the primary text', () => {
 		render(
 			<ItemRow
-				tool={makeTool({ icon: 'network' })}
+				item={makeItem({ label: 'Network Monitor' })}
 				isRunning={true}
 				onToggleEnabled={jest.fn()}
-				onTogglePin={jest.fn()}
-			/>,
-		);
-		expect(screen.getByTestId('NetworkCheckOutlinedIcon')).toBeInTheDocument();
-	});
-
-	it('renders the tool name as text', () => {
-		render(
-			<ItemRow
-				tool={makeTool({ name: 'Network Monitor' })}
-				isRunning={true}
-				onToggleEnabled={jest.fn()}
-				onTogglePin={jest.fn()}
+				onDelete={jest.fn()}
 			/>,
 		);
 		expect(screen.getByText('Network Monitor')).toBeInTheDocument();
 	});
 
-	it('renders the outlined pin icon and a "Pin" label when the tool is not pinned', () => {
+	it('renders the item secondary text', () => {
 		render(
 			<ItemRow
-				tool={makeTool({ pinned: false })}
+				item={makeItem({ secondary: 'Monitors network traffic' })}
 				isRunning={true}
 				onToggleEnabled={jest.fn()}
-				onTogglePin={jest.fn()}
+				onDelete={jest.fn()}
 			/>,
 		);
-		expect(screen.getByTestId('PushPinOutlinedIcon')).toBeInTheDocument();
-		expect(screen.getByRole('button', { name: /^pin network monitor$/i })).toBeInTheDocument();
+		expect(screen.getByText('Monitors network traffic')).toBeInTheDocument();
 	});
 
-	it('renders the filled pin icon and an "Unpin" label when the tool is pinned', () => {
+	it('renders the delete button with the correct aria-label and icon', () => {
 		render(
 			<ItemRow
-				tool={makeTool({ pinned: true })}
+				item={makeItem({ label: 'Network Monitor' })}
 				isRunning={true}
 				onToggleEnabled={jest.fn()}
-				onTogglePin={jest.fn()}
+				onDelete={jest.fn()}
 			/>,
 		);
-		expect(screen.getByTestId('PushPinIcon')).toBeInTheDocument();
-		expect(screen.getByRole('button', { name: /^unpin network monitor$/i })).toBeInTheDocument();
+		expect(
+			screen.getByRole('button', { name: /^delete network monitor$/i }),
+		).toBeInTheDocument();
+		expect(screen.getByTestId('DeleteOutlinedIcon')).toBeInTheDocument();
 	});
 
-	it('renders the switch as checked when the tool is enabled', () => {
+	it('calls onDelete with the item id when the delete button is clicked', async () => {
+		const onDelete = jest.fn();
 		render(
 			<ItemRow
-				tool={makeTool({ enabled: true })}
+				item={makeItem({ id: 'network-monitor' })}
 				isRunning={true}
 				onToggleEnabled={jest.fn()}
-				onTogglePin={jest.fn()}
+				onDelete={onDelete}
+			/>,
+		);
+		await userEvent.click(screen.getByRole('button', { name: /^delete network monitor$/i }));
+		expect(onDelete).toHaveBeenCalledTimes(1);
+		expect(onDelete).toHaveBeenCalledWith('network-monitor');
+	});
+
+	it('renders the switch as checked when the item is enabled', () => {
+		render(
+			<ItemRow
+				item={makeItem({ enabled: true })}
+				isRunning={true}
+				onToggleEnabled={jest.fn()}
+				onDelete={jest.fn()}
 			/>,
 		);
 		expect(screen.getByRole('switch', { name: /network monitor switch/i })).toBeChecked();
 	});
 
-	it('renders the switch as unchecked when the tool is disabled', () => {
+	it('renders the switch as unchecked when the item is disabled', () => {
 		render(
 			<ItemRow
-				tool={makeTool({ enabled: false })}
+				item={makeItem({ enabled: false })}
 				isRunning={true}
 				onToggleEnabled={jest.fn()}
-				onTogglePin={jest.fn()}
+				onDelete={jest.fn()}
 			/>,
 		);
 		expect(screen.getByRole('switch', { name: /network monitor switch/i })).not.toBeChecked();
 	});
 
-	it('calls onTogglePin with the tool id when the pin button is clicked', async () => {
-		const onTogglePin = jest.fn();
-		render(
-			<ItemRow
-				tool={makeTool({ id: 'network-monitor', pinned: false })}
-				isRunning={true}
-				onToggleEnabled={jest.fn()}
-				onTogglePin={onTogglePin}
-			/>,
-		);
-		await userEvent.click(screen.getByRole('button', { name: /^pin network monitor$/i }));
-		expect(onTogglePin).toHaveBeenCalledTimes(1);
-		expect(onTogglePin).toHaveBeenCalledWith('network-monitor');
-	});
-
-	it('calls onToggleEnabled with the tool id when the switch is toggled', async () => {
+	it('calls onToggleEnabled with the item id when the switch is toggled', async () => {
 		const onToggleEnabled = jest.fn();
 		render(
 			<ItemRow
-				tool={makeTool({ id: 'network-monitor', enabled: false })}
+				item={makeItem({ id: 'network-monitor', enabled: false })}
 				isRunning={true}
 				onToggleEnabled={onToggleEnabled}
-				onTogglePin={jest.fn()}
+				onDelete={jest.fn()}
 			/>,
 		);
 		await userEvent.click(screen.getByRole('switch', { name: /network monitor switch/i }));
@@ -117,52 +104,52 @@ describe('ItemRow', () => {
 		expect(onToggleEnabled).toHaveBeenCalledWith('network-monitor');
 	});
 
-	it('disables the pin button and switch when isRunning is false', () => {
+	it('disables the delete button and switch when isRunning is false', () => {
 		render(
 			<ItemRow
-				tool={makeTool()}
+				item={makeItem()}
 				isRunning={false}
 				onToggleEnabled={jest.fn()}
-				onTogglePin={jest.fn()}
+				onDelete={jest.fn()}
 			/>,
 		);
-		expect(screen.getByRole('button', { name: /^pin network monitor$/i })).toBeDisabled();
+		expect(screen.getByRole('button', { name: /^delete network monitor$/i })).toBeDisabled();
 		expect(screen.getByRole('switch', { name: /network monitor switch/i })).toBeDisabled();
 	});
 
-	it('does not disable the pin button and switch when isRunning is true', () => {
+	it('does not disable the delete button and switch when isRunning is true', () => {
 		render(
 			<ItemRow
-				tool={makeTool()}
+				item={makeItem()}
 				isRunning={true}
 				onToggleEnabled={jest.fn()}
-				onTogglePin={jest.fn()}
+				onDelete={jest.fn()}
 			/>,
 		);
-		expect(screen.getByRole('button', { name: /^pin network monitor$/i })).not.toBeDisabled();
+		expect(screen.getByRole('button', { name: /^delete network monitor$/i })).not.toBeDisabled();
 		expect(screen.getByRole('switch', { name: /network monitor switch/i })).not.toBeDisabled();
 	});
 
-	it('does not call onTogglePin or onToggleEnabled when controls are disabled', async () => {
-		const onTogglePin = jest.fn();
+	it('does not call onDelete or onToggleEnabled when controls are disabled', async () => {
+		const onDelete = jest.fn();
 		const onToggleEnabled = jest.fn();
 		render(
 			<ItemRow
-				tool={makeTool()}
+				item={makeItem()}
 				isRunning={false}
 				onToggleEnabled={onToggleEnabled}
-				onTogglePin={onTogglePin}
+				onDelete={onDelete}
 			/>,
 		);
 
-		await userEvent.click(screen.getByRole('button', { name: /^pin network monitor$/i }), {
+		await userEvent.click(screen.getByRole('button', { name: /^delete network monitor$/i }), {
 			pointerEventsCheck: 0,
 		});
 		await userEvent.click(screen.getByRole('switch', { name: /network monitor switch/i }), {
 			pointerEventsCheck: 0,
 		});
 
-		expect(onTogglePin).toHaveBeenCalledTimes(0);
+		expect(onDelete).toHaveBeenCalledTimes(0);
 		expect(onToggleEnabled).toHaveBeenCalledTimes(0);
 	});
 });

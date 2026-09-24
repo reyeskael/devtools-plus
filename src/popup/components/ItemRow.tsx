@@ -1,36 +1,34 @@
-import { IconButton, ListItem, ListItemIcon, ListItemText, Switch } from '@mui/material';
-import PushPinIcon from '@mui/icons-material/PushPin';
-import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
-import { Tool } from '../../shared/tools/types';
-import { toolIcons } from './toolIcons';
+import { IconButton, ListItem, ListItemText, Switch } from '@mui/material';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 
-interface ItemRowProps {
-	tool: Tool;
-	isRunning: boolean;
-	onToggleEnabled: (id: string) => void;
-	onTogglePin: (id: string) => void;
+export interface ItemRowViewModel {
+	id: string;
+	label: string;
+	secondary: string;
+	enabled: boolean;
 }
 
-export const ItemRow = ({ tool, isRunning, onToggleEnabled, onTogglePin }: ItemRowProps) => {
-	const PinIcon = tool.pinned ? PushPinIcon : PushPinOutlinedIcon;
-	const pinLabel = `${tool.pinned ? 'Unpin' : 'Pin'} ${tool.name}`;
-	const switchLabel = `${tool.name} switch`;
+interface ItemRowProps {
+	item: ItemRowViewModel;
+	isRunning: boolean;
+	onToggleEnabled: (id: string) => void;
+	onDelete: (id: string) => void;
+}
+
+export const ItemRow = ({ item, isRunning, onToggleEnabled, onDelete }: ItemRowProps) => {
+	const deleteLabel = `Delete ${item.label}`;
+	const switchLabel = `${item.label} switch`;
 
 	return (
 		<ListItem sx={{ opacity: isRunning ? 1 : 0.5 }}>
-			<ListItemIcon>{toolIcons[tool.icon]}</ListItemIcon>
-			<ListItemText primary={tool.name} />
-			<IconButton
-				disabled={!isRunning}
-				onClick={() => onTogglePin(tool.id)}
-				aria-label={pinLabel}
-			>
-				<PinIcon />
+			<ListItemText primary={item.label} secondary={item.secondary} />
+			<IconButton disabled={!isRunning} onClick={() => onDelete(item.id)} aria-label={deleteLabel}>
+				<DeleteOutlinedIcon />
 			</IconButton>
 			<Switch
-				checked={tool.enabled}
+				checked={item.enabled}
 				disabled={!isRunning}
-				onChange={() => onToggleEnabled(tool.id)}
+				onChange={() => onToggleEnabled(item.id)}
 				slotProps={{ input: { 'aria-label': switchLabel } }}
 			/>
 		</ListItem>

@@ -3,46 +3,49 @@ import userEvent from '@testing-library/user-event';
 import { PopupTabs } from './PopupTabs';
 
 describe('PopupTabs', () => {
-	it('renders exactly 3 tabs', () => {
-		render(<PopupTabs value="pinned" onChange={jest.fn()} />);
-		expect(screen.getAllByRole('tab')).toHaveLength(3);
+	it('renders exactly 2 tabs', () => {
+		render(<PopupTabs value="mock-responses" onChange={jest.fn()} />);
+		expect(screen.getAllByRole('tab')).toHaveLength(2);
 	});
 
 	it('renders the tabs in order with the correct labels', () => {
-		render(<PopupTabs value="pinned" onChange={jest.fn()} />);
+		render(<PopupTabs value="mock-responses" onChange={jest.fn()} />);
 		const tabs = screen.getAllByRole('tab');
-		expect(tabs[0]).toHaveTextContent('Pinned');
-		expect(tabs[1]).toHaveTextContent('All tools');
-		expect(tabs[2]).toHaveTextContent('Active');
+		expect(tabs[0]).toHaveTextContent('API Response Mock');
+		expect(tabs[1]).toHaveTextContent('HTTP Rules');
 	});
 
 	it('marks only the tab matching the value prop as selected', () => {
-		render(<PopupTabs value="all" onChange={jest.fn()} />);
-		expect(screen.getByRole('tab', { name: /pinned/i })).toHaveAttribute('aria-selected', 'false');
-		expect(screen.getByRole('tab', { name: /all tools/i })).toHaveAttribute('aria-selected', 'true');
-		expect(screen.getByRole('tab', { name: /active/i })).toHaveAttribute('aria-selected', 'false');
+		render(<PopupTabs value="http-rules" onChange={jest.fn()} />);
+		expect(screen.getByRole('tab', { name: /api response mock/i })).toHaveAttribute(
+			'aria-selected',
+			'false',
+		);
+		expect(screen.getByRole('tab', { name: /http rules/i })).toHaveAttribute(
+			'aria-selected',
+			'true',
+		);
 	});
 
 	it('renders an icon inside each tab', () => {
-		render(<PopupTabs value="pinned" onChange={jest.fn()} />);
-		expect(screen.getByTestId('PushPinOutlinedIcon')).toBeInTheDocument();
-		expect(screen.getByTestId('AppsOutlinedIcon')).toBeInTheDocument();
-		expect(screen.getByTestId('BoltIcon')).toBeInTheDocument();
+		render(<PopupTabs value="mock-responses" onChange={jest.fn()} />);
+		expect(screen.getByTestId('ApiOutlinedIcon')).toBeInTheDocument();
+		expect(screen.getByTestId('RuleOutlinedIcon')).toBeInTheDocument();
 	});
 
-	it('calls onChange with "all" when the All tools tab is clicked', async () => {
+	it('calls onChange with "mock-responses" when the API Response Mock tab is clicked', async () => {
 		const onChange = jest.fn();
-		render(<PopupTabs value="pinned" onChange={onChange} />);
-		await userEvent.click(screen.getByRole('tab', { name: /all tools/i }));
+		render(<PopupTabs value="http-rules" onChange={onChange} />);
+		await userEvent.click(screen.getByRole('tab', { name: /api response mock/i }));
 		expect(onChange).toHaveBeenCalledTimes(1);
-		expect(onChange).toHaveBeenCalledWith('all');
+		expect(onChange).toHaveBeenCalledWith('mock-responses');
 	});
 
-	it('calls onChange with "active" when the Active tab is clicked', async () => {
+	it('calls onChange with "http-rules" when the HTTP Rules tab is clicked', async () => {
 		const onChange = jest.fn();
-		render(<PopupTabs value="all" onChange={onChange} />);
-		await userEvent.click(screen.getByRole('tab', { name: /active/i }));
+		render(<PopupTabs value="mock-responses" onChange={onChange} />);
+		await userEvent.click(screen.getByRole('tab', { name: /http rules/i }));
 		expect(onChange).toHaveBeenCalledTimes(1);
-		expect(onChange).toHaveBeenCalledWith('active');
+		expect(onChange).toHaveBeenCalledWith('http-rules');
 	});
 });

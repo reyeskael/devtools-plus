@@ -1,9 +1,8 @@
 import { Tab, Tabs } from '@mui/material';
-import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
-import BoltIcon from '@mui/icons-material/Bolt';
-import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
+import ApiOutlinedIcon from '@mui/icons-material/ApiOutlined';
+import RuleOutlinedIcon from '@mui/icons-material/RuleOutlined';
 
-export type PopupTabKey = 'pinned' | 'all' | 'active';
+export type PopupTabKey = 'mock-responses' | 'http-rules';
 
 interface PopupTabsProps {
 	value: PopupTabKey;
@@ -12,8 +11,12 @@ interface PopupTabsProps {
 
 export const PopupTabs = ({ value, onChange }: PopupTabsProps) => (
 	<Tabs value={value} onChange={(_, newValue) => onChange(newValue)} aria-label="Tool tabs">
-		<Tab label="Pinned" value="pinned" icon={<PushPinOutlinedIcon />} iconPosition="start" />
-		<Tab label="All tools" value="all" icon={<AppsOutlinedIcon />} iconPosition="start" />
-		<Tab label="Active" value="active" icon={<BoltIcon />} iconPosition="start" />
+		<Tab
+			label="API Response Mock"
+			value="mock-responses"
+			icon={<ApiOutlinedIcon />}
+			iconPosition="start"
+		/>
+		<Tab label="HTTP Rules" value="http-rules" icon={<RuleOutlinedIcon />} iconPosition="start" />
 	</Tabs>
 );

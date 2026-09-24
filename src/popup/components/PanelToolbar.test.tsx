@@ -9,13 +9,38 @@ jest.mock('../../shared/chrome/openApp', () => ({
 import { openApp } from '../../shared/chrome/openApp';
 
 describe('PanelToolbar', () => {
-	it('renders the "Tools" section title', () => {
-		render(<PanelToolbar />);
-		expect(screen.getByText('Tools')).toBeInTheDocument();
+	it('renders the title prop as the section heading', () => {
+		render(<PanelToolbar title="My Title" addLabel="Add" onAdd={jest.fn()} />);
+		expect(screen.getByText('My Title')).toBeInTheDocument();
+	});
+
+	it('renders the Add button with the addLabel text and OpenInNewIcon', () => {
+		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
+		const addButton = screen.getByRole('button', { name: 'Add Mock' });
+		expect(addButton).toBeInTheDocument();
+		expect(screen.getByTestId('OpenInNewIcon')).toBeInTheDocument();
+	});
+
+	it('calls onAdd exactly once and does not call openApp when the Add button is clicked', async () => {
+		const onAdd = jest.fn();
+		const openAppMock = openApp as jest.Mock;
+		openAppMock.mockClear();
+
+		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={onAdd} />);
+		await userEvent.click(screen.getByRole('button', { name: 'Add Mock' }));
+
+		expect(onAdd).toHaveBeenCalledTimes(1);
+		expect(openAppMock).not.toHaveBeenCalled();
+	});
+
+	it('renders the Add button alongside the Actions button', () => {
+		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
+		expect(screen.getByRole('button', { name: 'Add Mock' })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: 'Open actions menu' })).toBeInTheDocument();
 	});
 
 	it('renders the Actions button closed by default with ExpandMoreIcon and the correct aria-label', () => {
-		render(<PanelToolbar />);
+		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
 		const button = screen.getByRole('button', { name: 'Open actions menu' });
 		expect(button).toBeInTheDocument();
 		expect(button).toHaveTextContent('Actions');
@@ -25,7 +50,7 @@ describe('PanelToolbar', () => {
 	});
 
 	it('opens the menu, flips the chevron, and updates the aria-label when the Actions button is clicked', async () => {
-		render(<PanelToolbar />);
+		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
 		const button = screen.getByRole('button', { name: 'Open actions menu' });
 		await userEvent.click(button);
 
@@ -38,7 +63,7 @@ describe('PanelToolbar', () => {
 	});
 
 	it('renders the expected menu items in order, with a divider before the last item', async () => {
-		render(<PanelToolbar />);
+		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
 		await userEvent.click(screen.getByRole('button', { name: 'Open actions menu' }));
 
 		const menuItems = screen.getAllByRole('menuitem');
@@ -71,7 +96,7 @@ describe('PanelToolbar', () => {
 		const openAppMock = openApp as jest.Mock;
 		openAppMock.mockClear();
 
-		render(<PanelToolbar />);
+		render(<PanelToolbar title="Tools" addLabel="Add Mock" onAdd={jest.fn()} />);
 		await userEvent.click(screen.getByRole('button', { name: 'Open actions menu' }));
 		await userEvent.click(screen.getByRole('menuitem', { name: label }));
 

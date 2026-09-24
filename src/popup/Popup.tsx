@@ -1,5 +1,6 @@
 import { Box, List, Paper, Typography, styled } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { openApp } from '../shared/chrome/openApp';
 import { mockTools } from '../shared/tools/mockTools';
 import type { Tool } from '../shared/tools/types';
 import { EmptyState } from './components/EmptyState';
@@ -8,8 +9,9 @@ import { PanelToolbar } from './components/PanelToolbar';
 import { PopupHeader } from './components/PopupHeader';
 import { PopupTabs, type PopupTabKey } from './components/PopupTabs';
 
-// TODO(T-04): temporary shim inlining the old useToolsState logic. Wire
-// Popup.tsx up to usePopupItemsState once the item-based UI lands.
+// TODO(T-04): temporary shim inlining the old useToolsState logic, adjusted
+// for T-03's new component signatures (ItemRow view-model, two-tab layout).
+// Wire Popup.tsx up to usePopupItemsState once the item-based UI lands.
 const TOOLS_STORAGE_KEY = 'toolsState';
 
 interface StoredToolsState {
@@ -51,13 +53,11 @@ const useToolsStateShim = () => {
 		);
 	}, []);
 
-	const togglePin = useCallback((id: string) => {
-		setTools((prev) =>
-			prev.map((tool) => (tool.id === id ? { ...tool, pinned: !tool.pinned } : tool)),
-		);
+	const removeTool = useCallback((id: string) => {
+		setTools((prev) => prev.filter((tool) => tool.id !== id));
 	}, []);
 
-	return { tools, isRunning, setRunning, toggleTool, togglePin };
+	return { tools, isRunning, setRunning, toggleTool, removeTool };
 };
 
 const PopupRoot = styled(Box)(({ theme }) => ({
@@ -83,75 +83,32 @@ const PopupCard = styled(Paper, {
 	borderColor: dimmed ? theme.palette.grey[300] : theme.palette.divider,
 }));
 
-const getFilteredTools = (tools: Tool[], activeTab: PopupTabKey, isRunning: boolean): Tool[] => {
-	if (activeTab === 'pinned') {
-		return tools.filter((tool) => tool.pinned);
-	}
-	if (activeTab === 'active') {
-		return tools.filter((tool) => isRunning && tool.enabled);
-	}
-	return tools;
-};
+// TODO(T-04): replace with real per-tab collections from usePopupItemsState.
+const getFilteredTools = (tools: Tool[]): Tool[] => tools;
 
-const getEmptyState = (
-	activeTab: PopupTabKey,
-	isRunning: boolean,
-	onBrowseAll: () => void,
-	onTurnOn: () => void,
-) => {
-	if (activeTab === 'pinned') {
-		return (
-			<EmptyState
-				headline="Nothing pinned yet"
-				body="Pin your favorite tools for quick access."
-				actionLabel="Browse all tools"
-				onAction={onBrowseAll}
-			/>
-		);
-	}
-	if (activeTab === 'active' && isRunning) {
-		return (
-			<EmptyState
-				headline="No active tools"
-				body="Turn on a tool to see it appear here."
-				actionLabel="View all tools"
-				onAction={onBrowseAll}
-			/>
-		);
-	}
-	if (activeTab === 'active' && !isRunning) {
-		return (
-			<EmptyState
-				headline="DevTools Plus is off"
-				body="Turn the extension back on to use your tools."
-				actionLabel="Turn on"
-				onAction={onTurnOn}
-			/>
-		);
-	}
-	return null;
-};
+// TODO(T-04): replace with real per-tab empty-state copy from usePopupItemsState.
+const getEmptyState = (tools: Tool[]) =>
+	tools.length === 0 ? (
+		<EmptyState
+			headline="Nothing here yet"
+			body="Nothing to show."
+			actionLabel="Add"
+			onAction={() => openApp()}
+		/>
+	) : null;
 
 export const Popup = () => {
-	const { tools, isRunning, setRunning, toggleTool, togglePin } = useToolsStateShim();
-	const [activeTab, setActiveTab] = useState<PopupTabKey>('pinned');
+	const { tools, isRunning, setRunning, toggleTool, removeTool } = useToolsStateShim();
+	const [activeTab, setActiveTab] = useState<PopupTabKey>('mock-responses');
 
-	const filteredTools = getFilteredTools(tools, activeTab, isRunning);
-	const emptyState =
-		filteredTools.length === 0
-			? getEmptyState(
-					activeTab,
-					isRunning,
-					() => setActiveTab('all'),
-					() => setRunning(true),
-				)
-			: null;
+	const filteredTools = getFilteredTools(tools);
+	const emptyState = getEmptyState(filteredTools);
 
 	return (
 		<PopupRoot>
 			<PopupHeader isRunning={isRunning} onRunningChange={setRunning} />
 			<PopupCard variant="outlined" dimmed={!isRunning}>
-				<PanelToolbar />
+				<PanelToolbar title="Tools" addLabel="Add" onAdd={() => openApp()} />
 				<PopupTabs value={activeTab} onChange={setActiveTab} />
 				<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
 					{emptyState ?? (
@@ -159,10 +116,10 @@ export const Popup = () => {
 							{filteredTools.map((tool) => (
 								<ItemRow
 									key={tool.id}
-									tool={tool}
+									item={{ id: tool.id, label: tool.name, secondary: tool.icon, enabled: tool.enabled }}
 									isRunning={isRunning}
 									onToggleEnabled={toggleTool}
-									onTogglePin={togglePin}
+									onDelete={removeTool}
 								/>
 							))}
 						</List>
