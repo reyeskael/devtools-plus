@@ -12,7 +12,7 @@ import { PopupTabs, type PopupTabKey } from './components/PopupTabs';
 
 const PopupRoot = styled(Box)(({ theme }) => ({
 	width: 480,
-	height: 480,
+	height: 580,
 	padding: theme.spacing(2),
 	display: 'flex',
 	flexDirection: 'column',
