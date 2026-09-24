@@ -1,12 +1,64 @@
 import { Box, List, Paper, Typography, styled } from '@mui/material';
-import { useState } from 'react';
-import { useToolsState } from '../shared/hooks/useToolsState';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { mockTools } from '../shared/tools/mockTools';
 import type { Tool } from '../shared/tools/types';
 import { EmptyState } from './components/EmptyState';
 import { ItemRow } from './components/ItemRow';
 import { PanelToolbar } from './components/PanelToolbar';
 import { PopupHeader } from './components/PopupHeader';
 import { PopupTabs, type PopupTabKey } from './components/PopupTabs';
+
+// TODO(T-04): temporary shim inlining the old useToolsState logic. Wire
+// Popup.tsx up to usePopupItemsState once the item-based UI lands.
+const TOOLS_STORAGE_KEY = 'toolsState';
+
+interface StoredToolsState {
+	tools: Tool[];
+	isRunning: boolean;
+}
+
+const useToolsStateShim = () => {
+	const [tools, setTools] = useState<Tool[]>(mockTools);
+	const [isRunning, setRunning] = useState(true);
+	const hasHydratedRef = useRef(false);
+
+	// Load any persisted state once on mount. Until this resolves, the hook
+	// keeps rendering its in-memory defaults.
+	useEffect(() => {
+		chrome.storage.local.get(TOOLS_STORAGE_KEY, (result) => {
+			const stored = result[TOOLS_STORAGE_KEY] as StoredToolsState | undefined;
+			if (stored) {
+				setTools(stored.tools);
+				setRunning(stored.isRunning);
+			}
+			hasHydratedRef.current = true;
+		});
+	}, []);
+
+	// Persist every change, but only after the initial load has completed —
+	// otherwise this would overwrite real stored data with the defaults
+	// while the get() above is still in flight.
+	useEffect(() => {
+		if (!hasHydratedRef.current) {
+			return;
+		}
+		chrome.storage.local.set({ [TOOLS_STORAGE_KEY]: { tools, isRunning } });
+	}, [tools, isRunning]);
+
+	const toggleTool = useCallback((id: string) => {
+		setTools((prev) =>
+			prev.map((tool) => (tool.id === id ? { ...tool, enabled: !tool.enabled } : tool)),
+		);
+	}, []);
+
+	const togglePin = useCallback((id: string) => {
+		setTools((prev) =>
+			prev.map((tool) => (tool.id === id ? { ...tool, pinned: !tool.pinned } : tool)),
+		);
+	}, []);
+
+	return { tools, isRunning, setRunning, toggleTool, togglePin };
+};
 
 const PopupRoot = styled(Box)(({ theme }) => ({
 	width: 480,
@@ -81,7 +133,7 @@ const getEmptyState = (
 };
 
 export const Popup = () => {
-	const { tools, isRunning, setRunning, toggleTool, togglePin } = useToolsState();
+	const { tools, isRunning, setRunning, toggleTool, togglePin } = useToolsStateShim();
 	const [activeTab, setActiveTab] = useState<PopupTabKey>('pinned');
 
 	const filteredTools = getFilteredTools(tools, activeTab, isRunning);
