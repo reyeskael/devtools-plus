@@ -1,7 +1,6 @@
-import sampleData from './mocks/sample-data.json';
 import type { HttpRuleItem, MockResponseItem } from './types';
 
-export const seedMockResponses = sampleData as MockResponseItem[];
+export const seedMockResponses: MockResponseItem[] = [];
 
 export const seedHttpRules: HttpRuleItem[] = [
 	{

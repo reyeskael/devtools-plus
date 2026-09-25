@@ -4,7 +4,7 @@ A Chrome extension (Manifest V3) that intercepts a page's API calls and serves b
 
 Mocks are defined as data, toggled from the extension popup, and applied to `fetch()` and `XMLHttpRequest` calls made by page JavaScript. A global run/stop switch acts as a master kill switch.
 
-Built with React 19 + TypeScript + MUI 7, bundled by Vite via `@crxjs/vite-plugin`, tested with Jest.
+Built with React 19 + TypeScript + MUI 9, bundled by Vite via `@crxjs/vite-plugin`, tested with Jest.
 
 ## Status
 
@@ -12,7 +12,7 @@ Early scaffold. What works today:
 
 - Popup UI listing mock responses and HTTP rules, with per-item enable/delete and a global run switch, persisted to `chrome.storage.local`.
 - Working `fetch` and `XMLHttpRequest` interception in the page's main world, driven by the popup's state.
-- Seed data in `src/shared/items/mocks/sample-data.json` — three mocks against the same endpoint (200 with a body, bodyless 404 and 500), exactly one enabled.
+- Export/Import in the popup toolbar: Export downloads the current items as a `.json` file; Import accepts a `.json` file via a file picker or pasted JSON text.
 
 Not built yet: any UI for creating or editing mocks (the full-page app is a shell), and the HTTP rules (`block` / `redirect` / `modify-headers`) are listed in the popup but not yet enforced — they are the intended job of `chrome.declarativeNetRequest`, a separate feature from mocking.
 
@@ -91,7 +91,7 @@ src/
     bridge/                   ISOLATED world — storage → postMessage
     interceptor/              MAIN world — fetch/XHR patches + rule gate
   shared/
-    items/                    Item types, formatters, seed data (sample-data.json)
+    items/                    Item types, formatters, import/export transfer, fixtures
     mocks/                    Matching + response construction
     messaging/                Cross-world message types and validation
     storage/                  Storage key (dependency-free on purpose)
@@ -102,7 +102,12 @@ src/
 
 ## Defining mocks
 
-Until there's an editor UI, mocks come from `src/shared/items/mocks/sample-data.json` and are seeded into the popup on first run. Each entry is a `MockResponseItem` (`src/shared/items/types.ts`):
+There's no seed data anymore — a fresh install shows the popup's empty state. Until there's a full editor UI, the way to get data into the tool is the **Export/Import** feature in the popup toolbar:
+
+- **Export** downloads all current items (mock responses and HTTP rules) as a single `.json` file.
+- **Import** accepts a `.json` file via a file picker, or pasted JSON text, and replaces whichever of mock responses / HTTP rules are present in the file (a file with only mocks leaves existing HTTP rules untouched, and vice versa).
+
+`src/shared/items/__fixtures__/sample-mock-responses.json` is a worked example of the import format — used in tests, not bundled as seed data. Each entry is a `MockResponseItem` or `HttpRuleItem` (`src/shared/items/types.ts`); for a `MockResponseItem`:
 
 ```json
 {
@@ -122,7 +127,7 @@ Until there's an editor UI, mocks come from `src/shared/items/mocks/sample-data.
 }
 ```
 
-Omit `body` for a bodyless response. Statuses that forbid a body (204, 205, 304) are handled for you. Note that seed data only applies before anything is persisted — once the popup has written to `chrome.storage.local`, edits to the JSON won't show up until that stored state is cleared.
+Omit `body` for a bodyless response. Statuses that forbid a body (204, 205, 304) are handled for you.
 
 ## Testing
 

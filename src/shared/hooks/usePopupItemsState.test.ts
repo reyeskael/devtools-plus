@@ -1,27 +1,87 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { seedHttpRules, seedMockResponses } from '../items/seedItems';
+import { seedHttpRules } from '../items/seedItems';
 import { usePopupItemsState } from './usePopupItemsState';
+import type { HttpRuleItem, MockResponseItem } from '../items/types';
 
 const STORAGE_KEY = 'popupItemsState';
 
-describe('usePopupItemsState', () => {
-	beforeEach(() => {
-		// The chrome.storage.local stub in jest.setup.ts backs onto a module-level
-		// object that persists across tests within this file, so reset it (and the
-		// mock call history) before every test to keep them independent.
-		chrome.storage.local.set({ [STORAGE_KEY]: undefined });
-		jest.clearAllMocks();
-	});
+// Local fixtures — the real seedMockResponses is now an empty array (mock
+// responses come from Import, not a bundled seed), so tests that need
+// non-empty starting data seed chrome.storage.local directly instead of
+// relying on the module's in-memory defaults.
+const fixtureMockResponses: MockResponseItem[] = [
+	{
+		id: 'mr-1',
+		name: 'Get users',
+		kind: 'mock-response',
+		enabled: true,
+		method: 'GET',
+		urlPattern: '/api/users',
+		statusCode: 200,
+	},
+	{
+		id: 'mr-2',
+		name: 'Create user',
+		kind: 'mock-response',
+		enabled: false,
+		method: 'POST',
+		urlPattern: '/api/users',
+		statusCode: 201,
+	},
+];
 
-	it('starts running with the seeded mock responses and http rules', () => {
+const fixtureHttpRules: HttpRuleItem[] = [
+	{
+		id: 'hr-1',
+		name: 'Block ads',
+		kind: 'http-rule',
+		enabled: true,
+		urlPattern: '/ads/*',
+		action: 'block',
+	},
+	{
+		id: 'hr-2',
+		name: 'Redirect old',
+		kind: 'http-rule',
+		enabled: false,
+		urlPattern: '/old',
+		action: 'redirect',
+		target: '/new',
+	},
+];
+
+interface StoredOverrides {
+	mockResponses?: MockResponseItem[];
+	httpRules?: HttpRuleItem[];
+	isRunning?: boolean;
+}
+
+// chrome.storage.local.get's stub in jest.setup.ts invokes its callback
+// synchronously, so seeding storage before renderHook() lets the hook's
+// hydration effect resolve within the same synchronous act() flush that
+// renderHook performs — tests can assert on result.current immediately.
+const seedStorage = (overrides: StoredOverrides = {}) => {
+	chrome.storage.local.set({
+		[STORAGE_KEY]: {
+			mockResponses: fixtureMockResponses,
+			httpRules: fixtureHttpRules,
+			isRunning: true,
+			...overrides,
+		},
+	});
+};
+
+describe('usePopupItemsState', () => {
+	it('starts running with the real in-memory defaults before any storage exists', () => {
 		const { result } = renderHook(() => usePopupItemsState());
 
 		expect(result.current.isRunning).toBe(true);
-		expect(result.current.mockResponses).toEqual(seedMockResponses);
+		expect(result.current.mockResponses).toEqual([]);
 		expect(result.current.httpRules).toEqual(seedHttpRules);
 	});
 
 	it('item data is JSON-serializable', () => {
+		seedStorage();
 		const { result } = renderHook(() => usePopupItemsState());
 
 		expect(JSON.parse(JSON.stringify(result.current.mockResponses))).toEqual(
@@ -31,6 +91,7 @@ describe('usePopupItemsState', () => {
 	});
 
 	it("toggleItem('mock-response', id) flips only the targeted mock response's enabled flag", () => {
+		seedStorage();
 		const { result } = renderHook(() => usePopupItemsState());
 		const [first, second] = result.current.mockResponses;
 		const httpRulesBefore = result.current.httpRules;
@@ -49,6 +110,7 @@ describe('usePopupItemsState', () => {
 	});
 
 	it("toggleItem('http-rule', id) flips only the targeted http rule's enabled flag", () => {
+		seedStorage();
 		const { result } = renderHook(() => usePopupItemsState());
 		const [first, second] = result.current.httpRules;
 		const mockResponsesBefore = result.current.mockResponses;
@@ -67,6 +129,7 @@ describe('usePopupItemsState', () => {
 	});
 
 	it("removeItem('mock-response', id) removes only that item from mockResponses", () => {
+		seedStorage();
 		const { result } = renderHook(() => usePopupItemsState());
 		const [first] = result.current.mockResponses;
 		const httpRulesBefore = result.current.httpRules;
@@ -76,11 +139,12 @@ describe('usePopupItemsState', () => {
 		});
 
 		expect(result.current.mockResponses.find((item) => item.id === first.id)).toBeUndefined();
-		expect(result.current.mockResponses).toHaveLength(seedMockResponses.length - 1);
+		expect(result.current.mockResponses).toHaveLength(fixtureMockResponses.length - 1);
 		expect(result.current.httpRules).toEqual(httpRulesBefore);
 	});
 
 	it("removeItem('http-rule', id) removes only that item from httpRules", () => {
+		seedStorage();
 		const { result } = renderHook(() => usePopupItemsState());
 		const [first] = result.current.httpRules;
 		const mockResponsesBefore = result.current.mockResponses;
@@ -90,7 +154,7 @@ describe('usePopupItemsState', () => {
 		});
 
 		expect(result.current.httpRules.find((item) => item.id === first.id)).toBeUndefined();
-		expect(result.current.httpRules).toHaveLength(seedHttpRules.length - 1);
+		expect(result.current.httpRules).toHaveLength(fixtureHttpRules.length - 1);
 		expect(result.current.mockResponses).toEqual(mockResponsesBefore);
 	});
 
@@ -104,35 +168,155 @@ describe('usePopupItemsState', () => {
 		expect(result.current.isRunning).toBe(false);
 	});
 
+	describe('replaceItems', () => {
+		it('replacing only mockResponses leaves httpRules untouched', () => {
+			seedStorage();
+			const { result } = renderHook(() => usePopupItemsState());
+			const httpRulesBefore = result.current.httpRules;
+			const nextMockResponses: MockResponseItem[] = [
+				{
+					id: 'imported-1',
+					name: 'Imported mock',
+					kind: 'mock-response',
+					enabled: true,
+					method: 'GET',
+					urlPattern: '/imported',
+					statusCode: 200,
+				},
+			];
+
+			act(() => {
+				result.current.replaceItems(nextMockResponses, undefined);
+			});
+
+			expect(result.current.mockResponses).toEqual(nextMockResponses);
+			expect(result.current.httpRules).toEqual(httpRulesBefore);
+		});
+
+		it('replacing only httpRules leaves mockResponses untouched', () => {
+			seedStorage();
+			const { result } = renderHook(() => usePopupItemsState());
+			const mockResponsesBefore = result.current.mockResponses;
+			const nextHttpRules: HttpRuleItem[] = [
+				{
+					id: 'imported-rule-1',
+					name: 'Imported rule',
+					kind: 'http-rule',
+					enabled: true,
+					urlPattern: '/imported/*',
+					action: 'block',
+				},
+			];
+
+			act(() => {
+				result.current.replaceItems(undefined, nextHttpRules);
+			});
+
+			expect(result.current.httpRules).toEqual(nextHttpRules);
+			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
+		});
+
+		it('replaces both mockResponses and httpRules at once', () => {
+			seedStorage();
+			const { result } = renderHook(() => usePopupItemsState());
+			const nextMockResponses: MockResponseItem[] = [
+				{
+					id: 'imported-2',
+					name: 'Imported mock 2',
+					kind: 'mock-response',
+					enabled: false,
+					method: 'PUT',
+					urlPattern: '/imported2',
+					statusCode: 204,
+				},
+			];
+			const nextHttpRules: HttpRuleItem[] = [
+				{
+					id: 'imported-rule-2',
+					name: 'Imported rule 2',
+					kind: 'http-rule',
+					enabled: false,
+					urlPattern: '/imported2/*',
+					action: 'redirect',
+					target: '/target',
+				},
+			];
+
+			act(() => {
+				result.current.replaceItems(nextMockResponses, nextHttpRules);
+			});
+
+			expect(result.current.mockResponses).toEqual(nextMockResponses);
+			expect(result.current.httpRules).toEqual(nextHttpRules);
+		});
+
+		it('passing undefined for both arguments leaves both lists exactly as they were', () => {
+			seedStorage();
+			const { result } = renderHook(() => usePopupItemsState());
+			const mockResponsesBefore = result.current.mockResponses;
+			const httpRulesBefore = result.current.httpRules;
+
+			act(() => {
+				result.current.replaceItems(undefined, undefined);
+			});
+
+			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
+			expect(result.current.httpRules).toEqual(httpRulesBefore);
+		});
+
+		it('persists a replaceItems call to chrome.storage.local after hydration', () => {
+			seedStorage();
+			const { result } = renderHook(() => usePopupItemsState());
+			const nextMockResponses: MockResponseItem[] = [
+				{
+					id: 'imported-3',
+					name: 'Imported mock 3',
+					kind: 'mock-response',
+					enabled: true,
+					method: 'DELETE',
+					urlPattern: '/imported3',
+					statusCode: 200,
+				},
+			];
+
+			act(() => {
+				result.current.replaceItems(nextMockResponses, undefined);
+			});
+
+			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
+				[STORAGE_KEY]: {
+					mockResponses: nextMockResponses,
+					httpRules: result.current.httpRules,
+					isRunning: true,
+				},
+			});
+		});
+	});
+
 	describe('persistence', () => {
 		it('keeps the default mock responses, http rules, and isRunning once hydration settles on empty storage', async () => {
 			const { result } = renderHook(() => usePopupItemsState());
 
 			await waitFor(() => {
-				expect(chrome.storage.local.get).toHaveBeenCalledWith(
-					STORAGE_KEY,
-					expect.any(Function),
-				);
+				expect(chrome.storage.local.get).toHaveBeenCalledWith(STORAGE_KEY, expect.any(Function));
 			});
 
 			expect(result.current.isRunning).toBe(true);
-			expect(result.current.mockResponses).toEqual(seedMockResponses);
+			expect(result.current.mockResponses).toEqual([]);
 			expect(result.current.httpRules).toEqual(seedHttpRules);
 		});
 
 		it('hydrates mockResponses, httpRules, and isRunning from previously persisted storage on mount', async () => {
-			const persistedMockResponses = seedMockResponses.map((item, index) =>
+			const persistedMockResponses = fixtureMockResponses.map((item, index) =>
 				index === 0 ? { ...item, enabled: !item.enabled } : item,
 			);
-			const persistedHttpRules = seedHttpRules.map((item, index) =>
+			const persistedHttpRules = fixtureHttpRules.map((item, index) =>
 				index === 0 ? { ...item, enabled: !item.enabled } : item,
 			);
-			chrome.storage.local.set({
-				[STORAGE_KEY]: {
-					mockResponses: persistedMockResponses,
-					httpRules: persistedHttpRules,
-					isRunning: false,
-				},
+			seedStorage({
+				mockResponses: persistedMockResponses,
+				httpRules: persistedHttpRules,
+				isRunning: false,
 			});
 
 			const { result } = renderHook(() => usePopupItemsState());
@@ -157,18 +341,16 @@ describe('usePopupItemsState', () => {
 			// brittle, environment-coupled assertion here — assert on the invariant
 			// that actually matters: storage converges to the seeded value, never
 			// stays clobbered with defaults.
-			const persistedMockResponses = seedMockResponses.map((item, index) =>
+			const persistedMockResponses = fixtureMockResponses.map((item, index) =>
 				index === 0 ? { ...item, enabled: !item.enabled } : item,
 			);
-			const persistedHttpRules = seedHttpRules.map((item, index) =>
+			const persistedHttpRules = fixtureHttpRules.map((item, index) =>
 				index === 0 ? { ...item, enabled: !item.enabled } : item,
 			);
-			chrome.storage.local.set({
-				[STORAGE_KEY]: {
-					mockResponses: persistedMockResponses,
-					httpRules: persistedHttpRules,
-					isRunning: false,
-				},
+			seedStorage({
+				mockResponses: persistedMockResponses,
+				httpRules: persistedHttpRules,
+				isRunning: false,
 			});
 
 			renderHook(() => usePopupItemsState());
@@ -186,10 +368,11 @@ describe('usePopupItemsState', () => {
 		});
 
 		it('persists mock-response toggles to chrome.storage.local after hydration', () => {
+			seedStorage();
 			const { result } = renderHook(() => usePopupItemsState());
 
 			act(() => {
-				result.current.toggleItem('mock-response', seedMockResponses[0].id);
+				result.current.toggleItem('mock-response', fixtureMockResponses[0].id);
 			});
 
 			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
@@ -202,10 +385,11 @@ describe('usePopupItemsState', () => {
 		});
 
 		it('persists http-rule toggles to chrome.storage.local after hydration', () => {
+			seedStorage();
 			const { result } = renderHook(() => usePopupItemsState());
 
 			act(() => {
-				result.current.toggleItem('http-rule', seedHttpRules[1].id);
+				result.current.toggleItem('http-rule', fixtureHttpRules[1].id);
 			});
 
 			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
@@ -218,10 +402,11 @@ describe('usePopupItemsState', () => {
 		});
 
 		it('persists removeItem changes to chrome.storage.local after hydration', () => {
+			seedStorage();
 			const { result } = renderHook(() => usePopupItemsState());
 
 			act(() => {
-				result.current.removeItem('mock-response', seedMockResponses[0].id);
+				result.current.removeItem('mock-response', fixtureMockResponses[0].id);
 			});
 
 			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
@@ -234,6 +419,7 @@ describe('usePopupItemsState', () => {
 		});
 
 		it('persists setRunning changes to chrome.storage.local after hydration', () => {
+			seedStorage();
 			const { result } = renderHook(() => usePopupItemsState());
 
 			act(() => {

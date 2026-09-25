@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Chrome extension (Manifest V3) that intercepts a page's `fetch()` and `XMLHttpRequest` calls and serves back mocked responses (status code, status text, JSON body) without touching the app under test or standing up a server. Mocks are defined as data, toggled from the extension popup. Built with React 19 + TypeScript + MUI 7, bundled by Vite via `@crxjs/vite-plugin`, tested with Jest.
+A Chrome extension (Manifest V3) that intercepts a page's `fetch()` and `XMLHttpRequest` calls and serves back mocked responses (status code, status text, JSON body) without touching the app under test or standing up a server. Mocks are defined as data, toggled from the extension popup. Built with React 19 + TypeScript + MUI 9, bundled by Vite via `@crxjs/vite-plugin`, tested with Jest.
 
-Early scaffold: popup UI and interception work; there is no editor UI for mocks yet (edit `src/shared/items/mocks/sample-data.json` directly), and the `block` / `redirect` / `modify-headers` HTTP rules are listed in the popup but not enforced yet (intended to be built on `chrome.declarativeNetRequest`).
+Early scaffold: popup UI and interception work; there is no editor UI for mocks yet (use the popup toolbar's Export/Import feature to get data in and out — see below), and the `block` / `redirect` / `modify-headers` HTTP rules are listed in the popup but not enforced yet (intended to be built on `chrome.declarativeNetRequest`).
 
 ## Commands
 
@@ -63,7 +63,7 @@ src/
     bridge/                  ISOLATED world — storage → postMessage
     interceptor/             MAIN world — fetch/XHR patches + rule gate
   shared/
-    items/                    Item types, formatters, seed data (sample-data.json)
+    items/                    Item types, formatters, import/export transfer, fixtures
     mocks/                    Matching + response construction
     messaging/                Cross-world message types and validation
     storage/                  Storage key (kept dependency-free on purpose)
@@ -74,7 +74,7 @@ src/
 
 ### Mock data shape
 
-Seed data lives in `src/shared/items/mocks/sample-data.json` and is seeded into the popup on first run only — once the popup has written to `chrome.storage.local`, edits to the JSON won't show up until that stored state is cleared. Each entry is a `MockResponseItem` (`src/shared/items/types.ts`):
+There's no JSON seed file anymore — a fresh install shows the popup's empty state. Data gets into the tool via the popup toolbar's **Export/Import** feature: Export downloads all current items (mock responses and HTTP rules) as a `.json` file; Import accepts a `.json` file via a file picker or pasted JSON text, replacing whichever of mock responses / HTTP rules are present in the file (`src/shared/items/transfer.ts` does the parsing/validation, dependency-free of `chrome.*`/DOM). `src/shared/items/__fixtures__/sample-mock-responses.json` is a worked example of the import format, used in tests — not bundled as seed data. Each entry is a `MockResponseItem` (`src/shared/items/types.ts`):
 
 ```json
 {

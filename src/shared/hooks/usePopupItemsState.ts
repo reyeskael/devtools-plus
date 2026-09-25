@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { seedHttpRules, seedMockResponses } from '../items/seedItems';
 import { POPUP_ITEMS_STORAGE_KEY as STORAGE_KEY } from '../storage/keys';
 import type { HttpRuleItem, MockResponseItem, PopupItem } from '../items/types';
@@ -16,6 +16,7 @@ export interface UsePopupItemsState {
 	setRunning: (running: boolean) => void;
 	toggleItem: (kind: PopupItem['kind'], id: string) => void;
 	removeItem: (kind: PopupItem['kind'], id: string) => void;
+	replaceItems: (mockResponses?: MockResponseItem[], httpRules?: HttpRuleItem[]) => void;
 }
 
 export const usePopupItemsState = (): UsePopupItemsState => {
@@ -48,7 +49,7 @@ export const usePopupItemsState = (): UsePopupItemsState => {
 		chrome.storage.local.set({ [STORAGE_KEY]: { mockResponses, httpRules, isRunning } });
 	}, [mockResponses, httpRules, isRunning]);
 
-	const toggleItem = useCallback((kind: PopupItem['kind'], id: string) => {
+	const toggleItem = (kind: PopupItem['kind'], id: string) => {
 		if (kind === 'mock-response') {
 			setMockResponses((prev) =>
 				prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item)),
@@ -58,15 +59,35 @@ export const usePopupItemsState = (): UsePopupItemsState => {
 		setHttpRules((prev) =>
 			prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item)),
 		);
-	}, []);
+	};
 
-	const removeItem = useCallback((kind: PopupItem['kind'], id: string) => {
+	const removeItem = (kind: PopupItem['kind'], id: string) => {
 		if (kind === 'mock-response') {
 			setMockResponses((prev) => prev.filter((item) => item.id !== id));
 			return;
 		}
 		setHttpRules((prev) => prev.filter((item) => item.id !== id));
-	}, []);
+	};
 
-	return { mockResponses, httpRules, isRunning, setRunning, toggleItem, removeItem };
+	const replaceItems = (
+		nextMockResponses?: MockResponseItem[],
+		nextHttpRules?: HttpRuleItem[],
+	) => {
+		if (nextMockResponses !== undefined) {
+			setMockResponses(nextMockResponses);
+		}
+		if (nextHttpRules !== undefined) {
+			setHttpRules(nextHttpRules);
+		}
+	};
+
+	return {
+		mockResponses,
+		httpRules,
+		isRunning,
+		setRunning,
+		toggleItem,
+		removeItem,
+		replaceItems,
+	};
 };

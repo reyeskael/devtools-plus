@@ -2,14 +2,18 @@ import { Box, Button, Divider, Menu, MenuItem } from '@mui/material';
 import { useState } from 'react';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { openApp, type AppPage } from '../../shared/chrome/openApp';
 
 interface PanelToolbarProps {
 	page: AppPage;
+	onExport: () => void;
+	onImport: () => void;
 }
 
-export const PanelToolbar = ({ page }: PanelToolbarProps) => {
+export const PanelToolbar = ({ page, onExport, onImport }: PanelToolbarProps) => {
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 	const open = Boolean(anchorEl);
 
@@ -23,8 +27,26 @@ export const PanelToolbar = ({ page }: PanelToolbarProps) => {
 	};
 
 	return (
-		<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-			<Box sx={{ display: 'flex', gap: 1 }}>
+		<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+			<Box sx={{ display: 'flex', gap: 0.5 }}>
+				<Button
+					variant="outlined"
+					size="small"
+					startIcon={<FileDownloadIcon fontSize="small" />}
+					onClick={onExport}
+				>
+					Export
+				</Button>
+				<Button
+					variant="outlined"
+					size="small"
+					startIcon={<FileUploadIcon fontSize="small" />}
+					onClick={onImport}
+				>
+					Import
+				</Button>
+			</Box>
+			<Box sx={{ display: 'flex', gap: 0.5 }}>
 				<Button
 					variant="contained"
 					size="small"
