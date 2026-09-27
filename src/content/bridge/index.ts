@@ -1,4 +1,6 @@
 import { MESSAGE_SOURCE } from '../../shared/messaging/types';
+import { buildMockCountMessage } from '../../shared/messaging/buildMockCountMessage';
+import { isMockAppliedMessage } from '../../shared/messaging/validateMockAppliedMessage';
 import { POPUP_ITEMS_STORAGE_KEY as STORAGE_KEY } from '../../shared/storage/keys';
 import type { RuleSnapshot, RulesSnapshotMessage } from '../../shared/messaging/types';
 
@@ -18,6 +20,12 @@ export const buildRulesSnapshotMessage = (stored: RuleSnapshot | undefined): Rul
 	type: 'rules-snapshot',
 	payload: stored ?? EMPTY_SNAPSHOT,
 });
+
+// Total mock-applied count for this page, reported to the background so it
+// can set the per-tab badge. Lives here rather than in the interceptor
+// because the interceptor is MAIN-world and re-injected per navigation; this
+// module owns the running total for the page's lifetime.
+let mockCount = 0;
 
 export const shouldPostForChange = (
 	changes: Record<string, chrome.storage.StorageChange>,
@@ -43,6 +51,22 @@ export const initBridge = (): void => {
 		}
 		postSnapshot(changes[STORAGE_KEY].newValue as RuleSnapshot | undefined);
 	});
+
+	// A stale badge count from a previous page shouldn't linger after this
+	// script re-injects on navigation, so clear it explicitly rather than
+	// waiting for the first mock to be applied on the new page.
+	chrome.runtime.sendMessage(buildMockCountMessage(0));
 };
+
+window.addEventListener('message', (event) => {
+	if (event.source !== window) {
+		return;
+	}
+	if (!isMockAppliedMessage(event.data)) {
+		return;
+	}
+	mockCount += 1;
+	chrome.runtime.sendMessage(buildMockCountMessage(mockCount));
+});
 
 initBridge();

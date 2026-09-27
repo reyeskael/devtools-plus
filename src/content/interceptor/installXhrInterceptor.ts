@@ -1,4 +1,5 @@
 import { resolveMock } from './resolveMock';
+import { buildMockAppliedMessage } from '../../shared/messaging/buildMockAppliedMessage';
 import { toMockResponseInit } from '../../shared/mocks/toMockResponseInit';
 import type { RuleGate } from './ruleGate';
 
@@ -8,6 +9,10 @@ interface XhrWithMeta extends XMLHttpRequest {
 }
 
 const defaultGetBaseUrl = (): string => document.baseURI;
+
+const defaultNotifyMockApplied = (): void => {
+	window.postMessage(buildMockAppliedMessage(), window.location.origin);
+};
 
 type ShadowedProperty = 'readyState' | 'status' | 'statusText' | 'responseText' | 'response';
 
@@ -65,6 +70,7 @@ const dispatchMockedResponse = (
 export const installXhrInterceptor = (
 	ruleGate: RuleGate,
 	getBaseUrl: () => string = defaultGetBaseUrl,
+	notifyMockApplied: () => void = defaultNotifyMockApplied,
 ): (() => void) => {
 	const originalOpen = XMLHttpRequest.prototype.open;
 	const originalSend = XMLHttpRequest.prototype.send;
@@ -93,6 +99,7 @@ export const installXhrInterceptor = (
 				originalSend.apply(this, args);
 				return;
 			}
+			notifyMockApplied();
 			const { status, statusText, body } = toMockResponseInit(match);
 			Promise.resolve().then(() => {
 				dispatchMockedResponse(this, status, statusText, body);

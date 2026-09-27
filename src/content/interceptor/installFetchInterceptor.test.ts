@@ -58,6 +58,7 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		let settled = false;
@@ -73,7 +74,11 @@ describe('createFetchInterceptor', () => {
 		ruleGate.setSnapshot(snapshotWith());
 
 		const result = await promise;
-		expectMockResponse(result, { status: 200, statusText: 'OK', body: JSON.stringify(mockUsersGet.body) });
+		expectMockResponse(result, {
+			status: 200,
+			statusText: 'OK',
+			body: JSON.stringify(mockUsersGet.body),
+		});
 		expect(originalFetch).not.toHaveBeenCalled();
 	});
 
@@ -86,6 +91,7 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		const promise = interceptor('https://example.com/api/orders');
@@ -108,6 +114,7 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		const promise = interceptor('https://example.com/api/users');
@@ -118,7 +125,7 @@ describe('createFetchInterceptor', () => {
 		expect(originalFetch).toHaveBeenCalledWith('https://example.com/api/users', undefined);
 	});
 
-	it('passes through the exact input and init, and returns originalFetch\'s value by identity, when nothing matches', async () => {
+	it("passes through the exact input and init, and returns originalFetch's value by identity, when nothing matches", async () => {
 		const ruleGate = createRuleGate();
 		ruleGate.setSnapshot(snapshotWith());
 		const response = { status: 200 };
@@ -128,6 +135,7 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		const input = 'https://example.com/api/orders';
@@ -148,6 +156,7 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		await interceptor('https://example.com/api/users');
@@ -170,12 +179,17 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		const result = await interceptor('/api/users');
 
 		expect(originalFetch).not.toHaveBeenCalled();
-		expectMockResponse(result, { status: 200, statusText: 'OK', body: JSON.stringify(mockUsersGet.body) });
+		expectMockResponse(result, {
+			status: 200,
+			statusText: 'OK',
+			body: JSON.stringify(mockUsersGet.body),
+		});
 	});
 
 	it('serves the bodyless 404 sample entry with an empty body', async () => {
@@ -188,6 +202,7 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		const result = await interceptor(
@@ -207,6 +222,7 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		const result = await interceptor(
@@ -225,10 +241,15 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		const firstResult = await interceptor('https://example.com/api/users');
-		expectMockResponse(firstResult, { status: 200, statusText: 'OK', body: JSON.stringify(mockUsersGet.body) });
+		expectMockResponse(firstResult, {
+			status: 200,
+			statusText: 'OK',
+			body: JSON.stringify(mockUsersGet.body),
+		});
 		expect(originalFetch).not.toHaveBeenCalled();
 
 		// Live update: no page reload, no re-hold - the very next request should
@@ -249,10 +270,48 @@ describe('createFetchInterceptor', () => {
 			makeResponse,
 			ruleGate,
 			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied: jest.fn(),
 		});
 
 		await interceptor('https://example.com/api/users');
 
 		expect(originalFetch).toHaveBeenCalledWith('https://example.com/api/users', undefined);
+	});
+
+	it('calls notifyMockApplied when a mock matches', async () => {
+		const ruleGate = createRuleGate();
+		ruleGate.setSnapshot(snapshotWith());
+		const originalFetch = createOriginalFetch();
+		const notifyMockApplied = jest.fn();
+		const interceptor = createFetchInterceptor({
+			originalFetch,
+			makeResponse,
+			ruleGate,
+			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied,
+		});
+
+		await interceptor('https://example.com/api/users');
+
+		expect(notifyMockApplied).toHaveBeenCalledTimes(1);
+	});
+
+	it('does not call notifyMockApplied on a pass-through/no-match request', async () => {
+		const ruleGate = createRuleGate();
+		ruleGate.setSnapshot(snapshotWith());
+		const originalFetch = createOriginalFetch();
+		const notifyMockApplied = jest.fn();
+		const interceptor = createFetchInterceptor({
+			originalFetch,
+			makeResponse,
+			ruleGate,
+			getBaseUrl: () => 'https://example.com',
+			notifyMockApplied,
+		});
+
+		await interceptor('https://example.com/api/orders');
+
+		expect(notifyMockApplied).not.toHaveBeenCalled();
+		expect(originalFetch).toHaveBeenCalledWith('https://example.com/api/orders', undefined);
 	});
 });

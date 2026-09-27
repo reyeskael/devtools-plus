@@ -14,6 +14,21 @@ export interface RulesSnapshotMessage {
 	payload: RuleSnapshot;
 }
 
-// Union of one member today; T-04/T-05 add more message kinds (e.g. mock-applied
-// counts) without breaking this type. Keep it a union, not a single interface.
-export type BridgeMessage = RulesSnapshotMessage;
+export interface MockAppliedMessage {
+	source: typeof MESSAGE_SOURCE;
+	type: 'mock-applied';
+}
+
+export interface MockCountPayload {
+	count: number;
+}
+
+export interface MockCountMessage {
+	source: typeof MESSAGE_SOURCE;
+	type: 'mock-count';
+	payload: MockCountPayload;
+}
+
+// Messages exchanged via window.postMessage between the ISOLATED-world bridge
+// and the MAIN-world interceptor (in either direction).
+export type BridgeMessage = RulesSnapshotMessage | MockAppliedMessage;

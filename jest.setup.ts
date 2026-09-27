@@ -14,6 +14,10 @@ const storageData: Record<string, unknown> = {};
 			addListener: jest.fn(),
 			removeListener: jest.fn(),
 		},
+		onInstalled: {
+			addListener: jest.fn(),
+			removeListener: jest.fn(),
+		},
 	},
 	storage: {
 		local: {

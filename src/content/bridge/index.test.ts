@@ -1,5 +1,7 @@
 import { buildRulesSnapshotMessage, initBridge, shouldPostForChange } from './index';
 import { MESSAGE_SOURCE } from '../../shared/messaging/types';
+import { buildMockAppliedMessage } from '../../shared/messaging/buildMockAppliedMessage';
+import { buildMockCountMessage } from '../../shared/messaging/buildMockCountMessage';
 import { isRulesSnapshotMessage } from '../../shared/messaging/validateRulesSnapshotMessage';
 import { POPUP_ITEMS_STORAGE_KEY as STORAGE_KEY } from '../../shared/storage/keys';
 import type { RuleSnapshot, RulesSnapshotMessage } from '../../shared/messaging/types';
@@ -89,11 +91,15 @@ describe('shouldPostForChange', () => {
 	});
 
 	it('ignores the right key in the managed storage area', () => {
-		expect(shouldPostForChange({ [STORAGE_KEY]: { newValue: snapshot } }, 'managed')).toBe(false);
+		expect(shouldPostForChange({ [STORAGE_KEY]: { newValue: snapshot } }, 'managed')).toBe(
+			false,
+		);
 	});
 
 	it('ignores the right key in the session storage area', () => {
-		expect(shouldPostForChange({ [STORAGE_KEY]: { newValue: snapshot } }, 'session')).toBe(false);
+		expect(shouldPostForChange({ [STORAGE_KEY]: { newValue: snapshot } }, 'session')).toBe(
+			false,
+		);
 	});
 });
 
@@ -251,5 +257,73 @@ describe('initBridge', () => {
 		secondListener({ [STORAGE_KEY]: { newValue: snapshot } }, 'local');
 
 		expect(postMessageSpy).toHaveBeenCalledTimes(2);
+	});
+
+	it('sends an explicit 0 via chrome.runtime.sendMessage on init, to clear a stale badge', () => {
+		const sendMessageSpy = chrome.runtime.sendMessage as jest.Mock;
+		sendMessageSpy.mockClear();
+
+		initBridge();
+
+		expect(sendMessageSpy).toHaveBeenCalledWith(buildMockCountMessage(0));
+	});
+});
+
+// This describe block relies on being the only place in this test file that
+// dispatches a genuine `window` `message` event carrying a `mock-applied`
+// payload. The module's `mockCount` is module-scoped state, shared across
+// every test in this file (the module is imported once, at the top of the
+// file) — so the very first assertion below depends on no earlier test having
+// incremented it. Tests that merely need to confirm a message is *ignored*
+// don't depend on the counter's absolute value, so they're safe regardless of
+// ordering; only the "absolute total, not a delta" case needs that ordering
+// guarantee, which is why its two dispatches happen back-to-back inside a
+// single `it`, rather than being asserted across separate test cases.
+describe('inbound mock-applied messages (badge counter)', () => {
+	const dispatchMessage = (data: unknown, source: unknown = window): void => {
+		window.dispatchEvent(new MessageEvent('message', { data, source: source as Window }));
+	};
+
+	it('increments the counter on each mock-applied message and sends the absolute total, not a delta', () => {
+		const sendMessageSpy = chrome.runtime.sendMessage as jest.Mock;
+		sendMessageSpy.mockClear();
+
+		dispatchMessage(buildMockAppliedMessage());
+		expect(sendMessageSpy).toHaveBeenLastCalledWith(buildMockCountMessage(1));
+
+		dispatchMessage(buildMockAppliedMessage());
+		expect(sendMessageSpy).toHaveBeenLastCalledWith(buildMockCountMessage(2));
+
+		expect(sendMessageSpy).toHaveBeenCalledTimes(2);
+	});
+
+	it('ignores a forged rules-snapshot message bouncing back off the page', () => {
+		const sendMessageSpy = chrome.runtime.sendMessage as jest.Mock;
+		sendMessageSpy.mockClear();
+
+		dispatchMessage(buildRulesSnapshotMessage(undefined));
+
+		expect(sendMessageSpy).not.toHaveBeenCalled();
+	});
+
+	it('ignores garbage window messages', () => {
+		const sendMessageSpy = chrome.runtime.sendMessage as jest.Mock;
+		sendMessageSpy.mockClear();
+
+		dispatchMessage({ foo: 'bar' });
+		dispatchMessage(null);
+		dispatchMessage('just a string');
+		dispatchMessage({ source: MESSAGE_SOURCE, type: 'something-else' });
+
+		expect(sendMessageSpy).not.toHaveBeenCalled();
+	});
+
+	it('ignores a well-formed mock-applied message whose event.source is not window', () => {
+		const sendMessageSpy = chrome.runtime.sendMessage as jest.Mock;
+		sendMessageSpy.mockClear();
+
+		dispatchMessage(buildMockAppliedMessage(), {});
+
+		expect(sendMessageSpy).not.toHaveBeenCalled();
 	});
 });

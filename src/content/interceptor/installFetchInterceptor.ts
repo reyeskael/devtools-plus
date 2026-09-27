@@ -1,4 +1,5 @@
 import { resolveMock } from './resolveMock';
+import { buildMockAppliedMessage } from '../../shared/messaging/buildMockAppliedMessage';
 import { toMockResponseInit } from '../../shared/mocks/toMockResponseInit';
 import type { RuleGate } from './ruleGate';
 import type { MockResponseInit } from '../../shared/mocks/toMockResponseInit';
@@ -10,6 +11,7 @@ export interface CreateFetchInterceptorDeps {
 	makeResponse: (init: { status: number; statusText: string; body: string }) => unknown;
 	ruleGate: RuleGate;
 	getBaseUrl: () => string;
+	notifyMockApplied: () => void;
 }
 
 const resolveUrlString = (input: FetchInput): string => {
@@ -39,6 +41,7 @@ export const createFetchInterceptor = ({
 	makeResponse,
 	ruleGate,
 	getBaseUrl,
+	notifyMockApplied,
 }: CreateFetchInterceptorDeps) => {
 	return async (input: FetchInput, init?: RequestInit): Promise<unknown> => {
 		if (!ruleGate.isReady()) {
@@ -57,6 +60,7 @@ export const createFetchInterceptor = ({
 			return originalFetch(input, init);
 		}
 
+		notifyMockApplied();
 		return makeResponse(toMockResponseInit(match));
 	};
 };
@@ -94,6 +98,7 @@ export const installFetchInterceptor = (ruleGate: RuleGate): (() => void) => {
 		makeResponse,
 		ruleGate,
 		getBaseUrl: () => document.baseURI,
+		notifyMockApplied: () => window.postMessage(buildMockAppliedMessage(), window.location.origin),
 	}) as typeof fetch;
 
 	return () => {

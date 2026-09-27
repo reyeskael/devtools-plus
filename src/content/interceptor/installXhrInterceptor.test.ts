@@ -231,6 +231,36 @@ describe('installXhrInterceptor', () => {
 		expect(sendSpy).toHaveBeenCalledTimes(1);
 	});
 
+	it('calls the injected notifyMockApplied when a mock matches', async () => {
+		const ruleGate = createRuleGate();
+		ruleGate.setSnapshot(snapshotWith());
+		const notifyMockApplied = jest.fn();
+		teardown = installXhrInterceptor(ruleGate, () => 'https://example.com', notifyMockApplied);
+
+		const xhr = new XMLHttpRequest();
+		const loaded = waitForLoad(xhr);
+		xhr.open('GET', 'https://example.com/api/users');
+		xhr.send();
+		await loaded;
+
+		expect(notifyMockApplied).toHaveBeenCalledTimes(1);
+	});
+
+	it('does not call the injected notifyMockApplied on a pass-through/no-match request', async () => {
+		const sendSpy = jest.spyOn(XMLHttpRequest.prototype, 'send').mockImplementation(() => {});
+		const ruleGate = createRuleGate();
+		ruleGate.setSnapshot(snapshotWith());
+		const notifyMockApplied = jest.fn();
+		teardown = installXhrInterceptor(ruleGate, () => 'https://example.com', notifyMockApplied);
+
+		const xhr = new XMLHttpRequest();
+		xhr.open('GET', 'https://example.com/api/orders');
+		xhr.send();
+
+		expect(sendSpy).toHaveBeenCalledTimes(1);
+		expect(notifyMockApplied).not.toHaveBeenCalled();
+	});
+
 	it('restores the original open and send after teardown', () => {
 		const originalOpen = XMLHttpRequest.prototype.open;
 		const originalSend = XMLHttpRequest.prototype.send;
