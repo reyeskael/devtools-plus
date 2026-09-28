@@ -15,8 +15,8 @@ import { PopupHeader } from './components/PopupHeader';
 import { PopupTabs, type PopupTabKey } from './components/PopupTabs';
 
 const PopupRoot = styled(Box)(({ theme }) => ({
-	width: 480,
-	height: 580,
+	width: 720,
+	height: 500,
 	padding: theme.spacing(2),
 	display: 'flex',
 	flexDirection: 'column',
