@@ -52,53 +52,9 @@ For a production bundle, use `yarn build` instead and load the same `dist/` fold
 | `yarn format` | Prettier write |
 | `yarn typecheck` | `tsc --noEmit` |
 
-## How interception works
+## Architecture
 
-A main-world script has no access to `chrome.*`, and a content script in the isolated world cannot patch the page's globals. So the two are split, with a bridge between them:
-
-```
-popup (usePopupItemsState)
-  └─ chrome.storage.local['popupItemsState']
-       └─ bridge — isolated content script, chrome.storage.onChanged
-            └─ window.postMessage
-                 └─ interceptor — MAIN world, patches fetch + XHR
-```
-
-Both content scripts run at `document_start`. The flow:
-
-1. **Popup** (`src/shared/hooks/usePopupItemsState.ts`) owns `{ mockResponses, httpRules, isRunning }` and persists the whole blob to `chrome.storage.local` on every change.
-2. **Bridge** (`src/content/bridge/`) reads that key on load and subscribes to `chrome.storage.onChanged`, posting a rule snapshot into the page on each change. No message passing through the background worker, so nothing races the MV3 service worker lifecycle.
-3. **Interceptor** (`src/content/interceptor/`) replaces `window.fetch` and patches `XMLHttpRequest`, keeping the latest snapshot in a **rule gate**.
-
-Because both scripts start before the page does, there is a bootstrap race: a request could fire before the first snapshot arrives. The rule gate handles it by **holding** requests until the first snapshot lands, with a 1s timeout after which held requests are released to the real network (and a warning is logged). The bridge always posts something — an empty snapshot if storage is empty — so the gate normally opens immediately.
-
-Matching (`src/shared/mocks/matchMock.ts`) is deliberately simple: first enabled `mock-response` whose method matches and whose `urlPattern` is a **substring** of the resolved request URL wins. When `isRunning` is false, or nothing matches, the request passes through to the real network untouched.
-
-### What it does and doesn't catch
-
-Patching a realm's globals only covers requests that realm originates. In scope: `fetch()` and `XMLHttpRequest` from page JavaScript — including apps behind a normal caching service worker, since the patched global returns the mock before the request ever reaches the network stack. Out of scope: requests a worker originates itself, subresource loads (`<img>`, `<script>`, `<link>`), navigations, `sendBeacon`, `EventSource` and WebSockets.
-
-## Project structure
-
-```
-manifest.config.ts            MV3 manifest (typed, via @crxjs/vite-plugin)
-vite.config.ts                Build — interceptor is a standalone IIFE for MAIN world
-src/
-  popup/                      Toolbar popup: header, tabs, item rows, empty state
-  app/                        Full-page app shell (chrome-extension:// tab)
-  background/                 MV3 service worker
-  content/
-    bridge/                   ISOLATED world — storage → postMessage
-    interceptor/              MAIN world — fetch/XHR patches + rule gate
-  shared/
-    items/                    Item types, formatters, import/export transfer, fixtures
-    mocks/                    Matching + response construction
-    messaging/                Cross-world message types and validation
-    storage/                  Storage key (dependency-free on purpose)
-    hooks/                    usePopupItemsState
-    chrome/                   openApp helper
-    theme.tsx                 MUI theme + provider
-```
+The extension is split into three pieces — popup, an ISOLATED-world bridge, and a MAIN-world interceptor, plus the background service worker for the badge — connected by a one-way data flow through `chrome.storage`, with a `postMessage` return leg for the per-tab badge count. See **[docs/architecture.md](docs/architecture.md)** for the full data flow, the bootstrap race and how it's resolved, matching semantics, what is and isn't intercepted, badge behavior, the `<all_urls>` permission justification, and the project's file layout.
 
 ## Defining mocks
 
@@ -139,4 +95,4 @@ Jest with `ts-jest` and the jsdom environment. Tests are colocated as `*.test.ts
 
 ## Permissions
 
-`storage` and `tabs`, with `<all_urls>` host permissions — the extension is meant to be pointed at whatever page you're debugging, so the content scripts match all URLs.
+`storage`, `tabs`, and `<all_urls>` host permissions. See [docs/architecture.md](docs/architecture.md#permissions-and-all_urls) for what each is used for and the justification for the broad host permission.
