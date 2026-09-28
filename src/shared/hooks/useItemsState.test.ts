@@ -80,6 +80,27 @@ describe('useItemsState', () => {
 		expect(result.current.httpRules).toEqual(seedHttpRules);
 	});
 
+	it("hasHydrated starts false and flips true once the mount effect's chrome.storage.local.get callback fires", async () => {
+		// jest.setup.ts's chrome.storage.local.get stub normally invokes its callback
+		// synchronously, which would flip hasHydrated true within the same render/effect flush
+		// renderHook performs and defeat this test's "starts false" assertion. Deferring the
+		// callback by a macrotask here observes the real, momentarily-false state.
+		const originalGet = (chrome.storage.local.get as jest.Mock).getMockImplementation();
+		(chrome.storage.local.get as jest.Mock).mockImplementationOnce(
+			(key: string, callback: (result: Record<string, unknown>) => void) => {
+				setTimeout(() => originalGet?.(key, callback), 0);
+			},
+		);
+
+		const { result } = renderHook(() => useItemsState());
+
+		expect(result.current.hasHydrated).toBe(false);
+
+		await waitFor(() => {
+			expect(result.current.hasHydrated).toBe(true);
+		});
+	});
+
 	it('item data is JSON-serializable', () => {
 		seedStorage();
 		const { result } = renderHook(() => useItemsState());

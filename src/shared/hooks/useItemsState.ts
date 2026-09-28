@@ -13,6 +13,13 @@ export interface UseItemsState {
 	mockResponses: MockResponseItem[];
 	httpRules: HttpRuleItem[];
 	isRunning: boolean;
+	/**
+	 * Whether the initial `chrome.storage.local.get` load has completed (whether or not it found
+	 * anything to hydrate). Callers that need to distinguish "no persisted data yet" from "still
+	 * loading" — e.g. deciding whether an id genuinely doesn't exist — should gate on this rather
+	 * than on `mockResponses`/`httpRules` being non-empty.
+	 */
+	hasHydrated: boolean;
 	setRunning: (running: boolean) => void;
 	toggleItem: (kind: PopupItem['kind'], id: string) => void;
 	removeItem: (kind: PopupItem['kind'], id: string) => void;
@@ -32,6 +39,7 @@ export const useItemsState = (): UseItemsState => {
 	const [mockResponses, setMockResponses] = useState<MockResponseItem[]>(seedMockResponses);
 	const [httpRules, setHttpRules] = useState<HttpRuleItem[]>(seedHttpRules);
 	const [isRunning, setRunning] = useState(true);
+	const [hasHydrated, setHasHydrated] = useState(false);
 	const hasHydratedRef = useRef(false);
 	const lastWrittenPayloadRef = useRef<string | null>(null);
 
@@ -48,6 +56,7 @@ export const useItemsState = (): UseItemsState => {
 				setRunning(stored.isRunning);
 			}
 			hasHydratedRef.current = true;
+			setHasHydrated(true);
 		});
 	}, []);
 
@@ -173,6 +182,7 @@ export const useItemsState = (): UseItemsState => {
 		mockResponses,
 		httpRules,
 		isRunning,
+		hasHydrated,
 		setRunning,
 		toggleItem,
 		removeItem,
