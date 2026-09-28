@@ -1,3 +1,7 @@
+/**
+ * MAIN-world entry point: patches `fetch`/`XMLHttpRequest` on load, then keeps the shared
+ * rule gate's snapshot current from `rules-snapshot` messages posted by the bridge.
+ */
 import { createRuleGate } from './ruleGate';
 import { installFetchInterceptor } from './installFetchInterceptor';
 import { installXhrInterceptor } from './installXhrInterceptor';

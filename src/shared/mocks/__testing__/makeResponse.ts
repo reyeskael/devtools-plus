@@ -9,6 +9,13 @@ export interface FakeResponse {
 	json: () => Promise<unknown>;
 }
 
+/**
+ * Test double for the fetch interceptor's `makeResponse` dependency — a jsdom-safe stand-in
+ * for constructing a real `Response`.
+ *
+ * @param init - The mock's status/statusText/body.
+ * @returns A fake `Response`-shaped object.
+ */
 export const makeResponse = (init: MockResponseInit): FakeResponse => ({
 	status: init.status,
 	statusText: init.statusText,

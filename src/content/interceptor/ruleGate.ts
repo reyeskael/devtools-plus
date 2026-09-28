@@ -9,6 +9,15 @@ export interface RuleGate {
 	setSnapshot: (snapshot: RuleSnapshot) => void;
 }
 
+/**
+ * Creates the rule gate: the interceptor's holding point for requests that arrive before the
+ * bridge's first rule snapshot. Held requests release once a snapshot lands, or after
+ * {@link HOLD_TIMEOUT_MS} elapses — whichever comes first — so a bootstrap race never hangs
+ * a request indefinitely.
+ *
+ * @returns A gate with `isReady`/`waitUntilReady` for interceptors to check/await readiness,
+ * and `getSnapshot`/`setSnapshot` to read/update the current rules.
+ */
 export const createRuleGate = (): RuleGate => {
 	let snapshot: RuleSnapshot | undefined;
 	let ready = false;

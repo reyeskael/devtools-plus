@@ -1,3 +1,7 @@
+/**
+ * MV3 service worker. Its sole job today is turning `mock-count` messages from the bridge
+ * into the extension's per-tab toolbar badge.
+ */
 import { isMockCountMessage } from '../shared/messaging/validateMockCountMessage';
 
 const BADGE_BACKGROUND_COLOR = '#1976d2';

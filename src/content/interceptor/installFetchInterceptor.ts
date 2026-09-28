@@ -14,6 +14,12 @@ export interface CreateFetchInterceptorDeps {
 	notifyMockApplied: () => void;
 }
 
+/**
+ * Extracts the URL string from any `fetch()` input shape.
+ *
+ * @param input - The URL string, `URL`, or Request-like object passed to `fetch()`.
+ * @returns The request's URL as a string.
+ */
 const resolveUrlString = (input: FetchInput): string => {
 	if (typeof input === 'string') {
 		return input;
@@ -26,6 +32,13 @@ const resolveUrlString = (input: FetchInput): string => {
 	return (input as Request).url;
 };
 
+/**
+ * Extracts the HTTP method from any `fetch()` input shape.
+ *
+ * @param input - The URL string, `URL`, or Request-like object passed to `fetch()`.
+ * @param init - The `fetch()` init options, whose `method` takes precedence over `input`'s.
+ * @returns The resolved method, defaulting to `"GET"`.
+ */
 const resolveMethod = (input: FetchInput, init?: RequestInit): string => {
 	if (init?.method) {
 		return init.method;
@@ -36,6 +49,18 @@ const resolveMethod = (input: FetchInput, init?: RequestInit): string => {
 	return 'GET';
 };
 
+/**
+ * Builds the replacement `fetch` function: holds requests until the rule gate is ready, then
+ * serves a mocked response on a match or falls through to the real network otherwise.
+ * Dependency-injected so it can be unit tested without a real `fetch`/`Response`.
+ *
+ * @param deps.originalFetch - The real fetch to fall through to when nothing matches.
+ * @param deps.makeResponse - Builds the actual `Response` for a matched mock.
+ * @param deps.ruleGate - Holds the latest rule snapshot posted by the bridge.
+ * @param deps.getBaseUrl - Resolves the page's base URL for relative request URLs.
+ * @param deps.notifyMockApplied - Called whenever a mock is served, to drive the badge count.
+ * @returns The interceptor function to install as `window.fetch`.
+ */
 export const createFetchInterceptor = ({
 	originalFetch,
 	makeResponse,
@@ -69,6 +94,12 @@ export const createFetchInterceptor = ({
 // Passing a non-empty body for one of these throws when constructing a Response.
 const NULL_BODY_STATUSES = new Set([204, 205, 304]);
 
+/**
+ * Patches `window.fetch` with the mock-aware interceptor.
+ *
+ * @param ruleGate - Holds the latest rule snapshot posted by the bridge.
+ * @returns A restore function that puts the original `window.fetch` back.
+ */
 export const installFetchInterceptor = (ruleGate: RuleGate): (() => void) => {
 	const originalFetch = window.fetch.bind(window);
 	const makeResponse = (init: MockResponseInit): Response => {

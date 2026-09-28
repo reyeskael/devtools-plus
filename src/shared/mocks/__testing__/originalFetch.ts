@@ -9,5 +9,11 @@ const defaultResponse: FakeResponse = {
 	json: () => Promise.resolve(undefined),
 };
 
+/**
+ * Test double for the fetch interceptor's `originalFetch` dependency.
+ *
+ * @param response - The fake response the mock should resolve with.
+ * @returns A jest mock function resolving to `response`.
+ */
 export const createOriginalFetch = (response: FakeResponse = defaultResponse) =>
 	jest.fn().mockResolvedValue(response);

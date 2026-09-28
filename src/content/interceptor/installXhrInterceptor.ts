@@ -16,6 +16,14 @@ const defaultNotifyMockApplied = (): void => {
 
 type ShadowedProperty = 'readyState' | 'status' | 'statusText' | 'responseText' | 'response';
 
+/**
+ * Overrides a normally-native, read-only XHR property with an own property carrying a mocked
+ * value.
+ *
+ * @param xhr - The XHR instance to shadow a property on.
+ * @param property - Which property to shadow.
+ * @param value - The value readers of `property` should see.
+ */
 const shadowProperty = (xhr: XMLHttpRequest, property: ShadowedProperty, value: unknown): void => {
 	Object.defineProperty(xhr, property, { configurable: true, value });
 };
@@ -28,17 +36,28 @@ const SHADOWED_PROPERTIES: ShadowedProperty[] = [
 	'response',
 ];
 
-// Removes any own properties shadowed by a prior mocked response on this same
-// instance, so the native prototype getters take over again for a new request.
+/**
+ * Removes any own properties shadowed by a prior mocked response on this same instance, so
+ * the native prototype getters take over again for a new request.
+ *
+ * @param xhr - The XHR instance being reused for a new `open()` call.
+ */
 const clearShadowedProperties = (xhr: XMLHttpRequest): void => {
 	SHADOWED_PROPERTIES.forEach((property) => {
 		delete (xhr as Record<ShadowedProperty, unknown>)[property];
 	});
 };
 
-// Only `responseType === 'json'` is emulated beyond the raw string; `blob`,
-// `arraybuffer`, and `document` response types aren't supported since
-// sample-data.json only ever needs JSON mocks.
+/**
+ * Builds the value `xhr.response` should return for a mocked body, honoring `responseType`.
+ * Only `'json'` is emulated beyond the raw string; `blob`, `arraybuffer`, and `document`
+ * response types aren't supported since sample-data.json only ever needs JSON mocks.
+ *
+ * @param xhr - The XHR instance whose `responseType` determines the parsing.
+ * @param body - The mocked response body as a raw string.
+ * @returns The parsed JSON value when `responseType === 'json'` (`null` on parse failure),
+ * otherwise `body` unchanged.
+ */
 const parseResponseFor = (xhr: XMLHttpRequest, body: string): unknown => {
 	if (xhr.responseType !== 'json') {
 		return body;
@@ -50,6 +69,15 @@ const parseResponseFor = (xhr: XMLHttpRequest, body: string): unknown => {
 	}
 };
 
+/**
+ * Shadows a mocked response onto an XHR instance and fires the events a real completed
+ * request would, so app code observing `readystatechange`/`load`/`loadend` behaves normally.
+ *
+ * @param xhr - The XHR instance to serve the mocked response on.
+ * @param status - The mocked HTTP status code.
+ * @param statusText - The mocked status text.
+ * @param body - The mocked response body as a raw string.
+ */
 const dispatchMockedResponse = (
 	xhr: XMLHttpRequest,
 	status: number,
@@ -67,6 +95,14 @@ const dispatchMockedResponse = (
 	xhr.dispatchEvent(new Event('loadend'));
 };
 
+/**
+ * Patches `XMLHttpRequest.prototype.open`/`send` with the mock-aware interceptor.
+ *
+ * @param ruleGate - Holds the latest rule snapshot posted by the bridge.
+ * @param getBaseUrl - Resolves the page's base URL for relative request URLs.
+ * @param notifyMockApplied - Called whenever a mock is served, to drive the badge count.
+ * @returns A restore function that puts the original `open`/`send` back.
+ */
 export const installXhrInterceptor = (
 	ruleGate: RuleGate,
 	getBaseUrl: () => string = defaultGetBaseUrl,
