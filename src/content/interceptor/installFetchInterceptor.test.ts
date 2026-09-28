@@ -2,7 +2,6 @@ import { createFetchInterceptor } from './installFetchInterceptor';
 import { createRuleGate, HOLD_TIMEOUT_MS } from './ruleGate';
 import { makeResponse } from '../../shared/mocks/__testing__/makeResponse';
 import { createOriginalFetch } from '../../shared/mocks/__testing__/originalFetch';
-import { seedMockResponses } from '../../shared/items/seedItems';
 import type { FakeResponse } from '../../shared/mocks/__testing__/makeResponse';
 import type { RuleSnapshot } from '../../shared/messaging/types';
 import type { MockResponseItem } from '../../shared/items/types';
@@ -26,12 +25,29 @@ const snapshotWith = (overrides: Partial<RuleSnapshot> = {}): RuleSnapshot => ({
 	...overrides,
 });
 
-const findById = (id: string): MockResponseItem => {
-	const item = seedMockResponses.find((entry) => entry.id === id);
-	if (!item) {
-		throw new Error(`Fixture item "${id}" not found in seedMockResponses`);
-	}
-	return item;
+// Local fixtures — seedMockResponses is an empty array (mock responses now
+// come from Import, not a bundled seed), so these tests can't look items up
+// by id from the module's in-memory defaults.
+const yearlySummary404: MockResponseItem = {
+	id: 'mock-yearly-summary-404',
+	name: 'Yearly Summary - 404',
+	kind: 'mock-response',
+	enabled: false,
+	method: 'GET',
+	urlPattern: '/api/excite/v2/account-summary-api/v1/summary/yearly',
+	statusCode: 404,
+	statusText: 'Not Found',
+};
+
+const yearlySummary500: MockResponseItem = {
+	id: 'mock-yearly-summary-500',
+	name: 'Yearly Summary - 500',
+	kind: 'mock-response',
+	enabled: false,
+	method: 'GET',
+	urlPattern: '/api/excite/v2/account-summary-api/v1/summary/yearly',
+	statusCode: 500,
+	statusText: 'Internal Server Error',
 };
 
 const expectMockResponse = (
@@ -193,7 +209,7 @@ describe('createFetchInterceptor', () => {
 	});
 
 	it('serves the bodyless 404 sample entry with an empty body', async () => {
-		const item404 = { ...findById('mock-yearly-summary-404'), enabled: true };
+		const item404 = { ...yearlySummary404, enabled: true };
 		const ruleGate = createRuleGate();
 		ruleGate.setSnapshot(snapshotWith({ mockResponses: [item404] }));
 		const originalFetch = createOriginalFetch();
@@ -213,7 +229,7 @@ describe('createFetchInterceptor', () => {
 	});
 
 	it('serves the bodyless 500 sample entry with an empty body', async () => {
-		const item500 = { ...findById('mock-yearly-summary-500'), enabled: true };
+		const item500 = { ...yearlySummary500, enabled: true };
 		const ruleGate = createRuleGate();
 		ruleGate.setSnapshot(snapshotWith({ mockResponses: [item500] }));
 		const originalFetch = createOriginalFetch();

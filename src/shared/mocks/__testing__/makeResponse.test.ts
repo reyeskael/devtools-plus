@@ -1,20 +1,48 @@
 import { makeResponse } from './makeResponse';
 import { toMockResponseInit } from '../toMockResponseInit';
-import { seedMockResponses } from '../../items/seedItems';
 import type { MockResponseItem } from '../../items/types';
 import type { MockResponseInit } from '../toMockResponseInit';
 
-const findById = (id: string): MockResponseItem => {
-	const item = seedMockResponses.find((entry) => entry.id === id);
-	if (!item) {
-		throw new Error(`Fixture item "${id}" not found in seedMockResponses`);
-	}
-	return item;
+// Local fixtures — seedMockResponses is an empty array (mock responses now
+// come from Import, not a bundled seed), so these tests can't look items up
+// by id from the module's in-memory defaults.
+const yearlySummary200: MockResponseItem = {
+	id: 'mock-yearly-summary-200',
+	name: 'Yearly Summary - 200',
+	kind: 'mock-response',
+	enabled: true,
+	method: 'GET',
+	urlPattern: '/api/excite/v2/account-summary-api/v1/summary/yearly',
+	statusCode: 200,
+	statusText: 'OK',
+	body: { reports: [] },
+};
+
+const yearlySummary404: MockResponseItem = {
+	id: 'mock-yearly-summary-404',
+	name: 'Yearly Summary - 404',
+	kind: 'mock-response',
+	enabled: false,
+	method: 'GET',
+	urlPattern: '/api/excite/v2/account-summary-api/v1/summary/yearly',
+	statusCode: 404,
+	statusText: 'Not Found',
+};
+
+const yearlySummary500: MockResponseItem = {
+	id: 'mock-yearly-summary-500',
+	name: 'Yearly Summary - 500',
+	kind: 'mock-response',
+	enabled: false,
+	method: 'GET',
+	urlPattern: '/api/excite/v2/account-summary-api/v1/summary/yearly',
+	statusCode: 500,
+	statusText: 'Internal Server Error',
 };
 
 describe('makeResponse', () => {
 	it('builds a FakeResponse from a full JSON body 200 item', async () => {
-		const item = findById('mock-yearly-summary-200');
+		const item = yearlySummary200;
 		const init = toMockResponseInit(item);
 
 		const response = makeResponse(init);
@@ -28,7 +56,7 @@ describe('makeResponse', () => {
 	});
 
 	it('builds a FakeResponse from a bodyless 404 item', async () => {
-		const item = findById('mock-yearly-summary-404');
+		const item = yearlySummary404;
 		const init = toMockResponseInit(item);
 
 		const response = makeResponse(init);
@@ -42,7 +70,7 @@ describe('makeResponse', () => {
 	});
 
 	it('builds a FakeResponse from a bodyless 500 item', async () => {
-		const item = findById('mock-yearly-summary-500');
+		const item = yearlySummary500;
 		const init = toMockResponseInit(item);
 
 		const response = makeResponse(init);

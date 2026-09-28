@@ -1,10 +1,20 @@
 import { findMatchingMock } from './matchMock';
-import { seedMockResponses } from '../items/seedItems';
 import type { HttpRuleItem, MockResponseItem, PopupItem } from '../items/types';
 
-const yearlySummary200 = seedMockResponses.find(
-	(item) => item.id === 'mock-yearly-summary-200',
-) as MockResponseItem;
+// Local fixture — seedMockResponses is an empty array (mock responses now
+// come from Import, not a bundled seed), so this test can't look items up
+// by id from the module's in-memory defaults.
+const yearlySummary200: MockResponseItem = {
+	id: 'mock-yearly-summary-200',
+	name: 'Yearly Summary - 200',
+	kind: 'mock-response',
+	enabled: true,
+	method: 'GET',
+	urlPattern: '/api/excite/v2/account-summary-api/v1/summary/yearly',
+	statusCode: 200,
+	statusText: 'OK',
+	body: { reports: [] },
+};
 
 const httpRuleWithMatchingPattern: HttpRuleItem = {
 	id: 'rule-matches-mock-pattern',
@@ -144,7 +154,7 @@ describe('findMatchingMock', () => {
 
 	it('matches the enabled 200 entry from the real sample data by method and url', () => {
 		expect(
-			findMatchingMock(seedMockResponses, {
+			findMatchingMock([yearlySummary200], {
 				method: 'GET',
 				url: 'https://host.example.com/api/excite/v2/account-summary-api/v1/summary/yearly',
 			}),

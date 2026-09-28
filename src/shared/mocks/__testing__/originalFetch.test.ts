@@ -1,15 +1,21 @@
 import { createOriginalFetch } from './originalFetch';
 import { makeResponse } from './makeResponse';
 import { toMockResponseInit } from '../toMockResponseInit';
-import { seedMockResponses } from '../../items/seedItems';
 import type { MockResponseItem } from '../../items/types';
 
-const findById = (id: string): MockResponseItem => {
-	const item = seedMockResponses.find((entry) => entry.id === id);
-	if (!item) {
-		throw new Error(`Fixture item "${id}" not found in seedMockResponses`);
-	}
-	return item;
+// Local fixture — seedMockResponses is an empty array (mock responses now
+// come from Import, not a bundled seed), so this test can't look items up
+// by id from the module's in-memory defaults.
+const yearlySummary200: MockResponseItem = {
+	id: 'mock-yearly-summary-200',
+	name: 'Yearly Summary - 200',
+	kind: 'mock-response',
+	enabled: true,
+	method: 'GET',
+	urlPattern: '/api/excite/v2/account-summary-api/v1/summary/yearly',
+	statusCode: 200,
+	statusText: 'OK',
+	body: { reports: [] },
 };
 
 describe('createOriginalFetch', () => {
@@ -47,7 +53,7 @@ describe('createOriginalFetch', () => {
 	});
 
 	it('resolves to a custom response when one is provided', async () => {
-		const item = findById('mock-yearly-summary-200');
+		const item = yearlySummary200;
 		const customResponse = makeResponse(toMockResponseInit(item));
 
 		const originalFetch = createOriginalFetch(customResponse);
