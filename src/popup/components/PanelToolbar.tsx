@@ -13,14 +13,25 @@ interface PanelToolbarProps {
 	onImport: () => void;
 }
 
+/**
+ * The active tab's toolbar: Export/Import buttons, an Add button that deep-links into the
+ * full app for the active tab's page, and an Actions menu.
+ *
+ * @param props.page - The full app page to deep-link the Add button to.
+ * @param props.onExport - Called when the Export button is clicked.
+ * @param props.onImport - Called when the Import button is clicked.
+ * @returns The panel toolbar UI.
+ */
 export const PanelToolbar = ({ page, onExport, onImport }: PanelToolbarProps) => {
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 	const open = Boolean(anchorEl);
 
+	/** Closes the Actions menu. */
 	const handleClose = () => {
 		setAnchorEl(null);
 	};
 
+	/** Opens the full app and closes the Actions menu, for every menu item (all placeholders today). */
 	const handleItemClick = () => {
 		openApp();
 		handleClose();

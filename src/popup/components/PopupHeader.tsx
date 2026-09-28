@@ -6,6 +6,13 @@ interface PopupHeaderProps {
 	onRunningChange: (running: boolean) => void;
 }
 
+/**
+ * The popup's top bar: extension icon, master running switch, and a button to open the full app.
+ *
+ * @param props.isRunning - Whether interception is currently on.
+ * @param props.onRunningChange - Called with the new running state when the switch is toggled.
+ * @returns The popup header UI.
+ */
 export const PopupHeader = ({ isRunning, onRunningChange }: PopupHeaderProps) => {
 	const statusLabel = isRunning ? 'DevTools Plus running' : 'DevTools Plus off';
 

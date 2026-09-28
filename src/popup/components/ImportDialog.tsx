@@ -20,6 +20,17 @@ interface ImportDialogProps {
 	onClose: () => void;
 }
 
+/**
+ * Dialog for the popup toolbar's Import feature — pick a `.json` file or paste JSON text.
+ *
+ * @param props.open - Whether the dialog is visible.
+ * @param props.pastedText - The current contents of the paste text field (controlled).
+ * @param props.onPastedTextChange - Called with the new text as the paste field changes.
+ * @param props.onFileSelected - Called with the chosen file when one is picked.
+ * @param props.onConfirmPaste - Called when the Import button is clicked.
+ * @param props.onClose - Called when the dialog should close (backdrop click or Cancel).
+ * @returns The import dialog UI.
+ */
 export const ImportDialog = ({
 	open,
 	pastedText,
@@ -28,6 +39,7 @@ export const ImportDialog = ({
 	onConfirmPaste,
 	onClose,
 }: ImportDialogProps) => {
+	/** Reads the selected file (if any) and resets the input so re-picking the same file fires change again. */
 	const handleFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
 		if (file) {

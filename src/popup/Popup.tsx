@@ -62,6 +62,14 @@ const TAB_CONFIG: Record<PopupTabKey, TabConfig> = {
 	},
 };
 
+/**
+ * Projects the active tab's items into the view model `ItemRow` renders.
+ *
+ * @param activeTab - Which tab is active, determining which list to project.
+ * @param mockResponses - The full mock responses list.
+ * @param httpRules - The full HTTP rules list.
+ * @returns Row view models for the active tab's items.
+ */
 const getItemRows = (
 	activeTab: PopupTabKey,
 	mockResponses: MockResponseItem[],
@@ -88,6 +96,12 @@ interface ImportFeedback {
 	message: string;
 }
 
+/**
+ * The extension's toolbar popup: master switch, tabbed mock-response/HTTP-rule lists,
+ * export/import, and the entry points into the full-page app.
+ *
+ * @returns The popup UI.
+ */
 export const Popup = () => {
 	const {
 		mockResponses,
@@ -106,11 +120,18 @@ export const Popup = () => {
 	const activeTabConfig = TAB_CONFIG[activeTab];
 	const itemRows = getItemRows(activeTab, mockResponses, httpRules);
 
+	/** Downloads every mock response and HTTP rule as one dated `.json` export file. */
 	const handleExport = () => {
 		const allItems: PopupItem[] = [...mockResponses, ...httpRules];
 		downloadJson(buildExportFilename(), toExportPayload(allItems));
 	};
 
+	/**
+	 * Parses and applies imported JSON text, surfacing a success/error snackbar and closing
+	 * the import dialog on success.
+	 *
+	 * @param text - The raw JSON text to import (from a picked file or the paste field).
+	 */
 	const handleImportResult = (text: string) => {
 		const result = parseImportedItems(text);
 		if (!result.ok) {
@@ -129,6 +150,12 @@ export const Popup = () => {
 		setPastedText('');
 	};
 
+	/**
+	 * Reads a picked import file and hands its text to {@link handleImportResult}, surfacing
+	 * a read-failure snackbar instead if the file can't be read.
+	 *
+	 * @param file - The file chosen in the import dialog.
+	 */
 	const handleFileSelected = async (file: File) => {
 		try {
 			const text = await readFileAsText(file);

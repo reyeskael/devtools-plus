@@ -15,6 +15,16 @@ interface ItemRowProps {
 	onDelete: (id: string) => void;
 }
 
+/**
+ * A single mock response or HTTP rule row in the popup's item list, with an enable/disable
+ * switch and a delete button.
+ *
+ * @param props.item - The row's view model (id, label, secondary text, enabled state).
+ * @param props.isRunning - Whether interception is on; disables the row's controls when off.
+ * @param props.onToggleEnabled - Called with the item's id when the switch is toggled.
+ * @param props.onDelete - Called with the item's id when the delete button is clicked.
+ * @returns The item row UI.
+ */
 export const ItemRow = ({ item, isRunning, onToggleEnabled, onDelete }: ItemRowProps) => {
 	const deleteLabel = `Delete ${item.label}`;
 	const switchLabel = `${item.label} switch`;
