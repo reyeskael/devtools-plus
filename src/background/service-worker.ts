@@ -6,10 +6,20 @@ import { isMockCountMessage } from '../shared/messaging/validateMockCountMessage
 
 const BADGE_BACKGROUND_COLOR = '#1976d2';
 
+/**
+ * Logs a marker for install/update so the service worker's presence is visible in the
+ * `chrome://extensions` service worker console, since MV3 workers have no persistent UI of
+ * their own to confirm they're alive.
+ */
 chrome.runtime.onInstalled.addListener(() => {
 	console.log('[devtools-plus] background service worker installed');
 });
 
+/**
+ * Handles `mock-count` messages from the bridge, ignoring anything else that comes through
+ * `chrome.runtime.onMessage`. `sender.tab` is only present for messages from a content
+ * script, so a missing tab id means there's no badge to update.
+ */
 chrome.runtime.onMessage.addListener((message, sender) => {
 	if (!isMockCountMessage(message)) {
 		return;
