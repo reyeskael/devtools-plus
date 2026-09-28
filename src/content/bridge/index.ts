@@ -6,7 +6,7 @@ import type { RuleSnapshot, RulesSnapshotMessage } from '../../shared/messaging/
 
 /**
  * Fallback snapshot posted when storage has nothing yet. `isRunning: true` mirrors
- * `usePopupItemsState`'s own pre-hydration default, so this doesn't disagree with what the
+ * `useItemsState`'s own pre-hydration default, so this doesn't disagree with what the
  * popup is showing.
  */
 const EMPTY_SNAPSHOT: RuleSnapshot = {

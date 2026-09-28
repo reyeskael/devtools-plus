@@ -9,7 +9,7 @@ interface StoredPopupItemsState {
 	isRunning: boolean;
 }
 
-export interface UsePopupItemsState {
+export interface UseItemsState {
 	mockResponses: MockResponseItem[];
 	httpRules: HttpRuleItem[];
 	isRunning: boolean;
@@ -17,6 +17,7 @@ export interface UsePopupItemsState {
 	toggleItem: (kind: PopupItem['kind'], id: string) => void;
 	removeItem: (kind: PopupItem['kind'], id: string) => void;
 	replaceItems: (mockResponses?: MockResponseItem[], httpRules?: HttpRuleItem[]) => void;
+	upsertMockResponse: (item: MockResponseItem) => void;
 }
 
 /**
@@ -27,11 +28,12 @@ export interface UsePopupItemsState {
  * @returns The current items/running state plus mutators for toggling, removing, and
  * replacing items and for setting `isRunning`.
  */
-export const usePopupItemsState = (): UsePopupItemsState => {
+export const useItemsState = (): UseItemsState => {
 	const [mockResponses, setMockResponses] = useState<MockResponseItem[]>(seedMockResponses);
 	const [httpRules, setHttpRules] = useState<HttpRuleItem[]>(seedHttpRules);
 	const [isRunning, setRunning] = useState(true);
 	const hasHydratedRef = useRef(false);
+	const lastWrittenPayloadRef = useRef<string | null>(null);
 
 	/**
 	 * Loads any persisted state once on mount. Until this resolves, the hook keeps rendering
@@ -52,14 +54,51 @@ export const usePopupItemsState = (): UsePopupItemsState => {
 	/**
 	 * Persists every change, but only after the initial load has completed — otherwise this
 	 * would overwrite real stored data with the defaults while the get() above is still in
-	 * flight.
+	 * flight. Also records the written payload so the `onChanged` listener below can recognize
+	 * and ignore the event this write itself fires.
 	 */
 	useEffect(() => {
 		if (!hasHydratedRef.current) {
 			return;
 		}
-		chrome.storage.local.set({ [STORAGE_KEY]: { mockResponses, httpRules, isRunning } });
+		const payload = { mockResponses, httpRules, isRunning };
+		lastWrittenPayloadRef.current = JSON.stringify(payload);
+		chrome.storage.local.set({ [STORAGE_KEY]: payload });
 	}, [mockResponses, httpRules, isRunning]);
+
+	/**
+	 * Mirrors state written by another mounted instance of this hook (e.g. the popup and an
+	 * app tab open at once). Skips changes that match the last payload this instance itself
+	 * wrote, so this instance's own write effect doesn't loop back into a redundant setState.
+	 */
+	useEffect(() => {
+		const handleStorageChange = (
+			changes: Record<string, chrome.storage.StorageChange>,
+			areaName: chrome.storage.AreaName,
+		) => {
+			if (areaName !== 'local' || !(STORAGE_KEY in changes)) {
+				return;
+			}
+			const nextValue = changes[STORAGE_KEY].newValue as StoredPopupItemsState | undefined;
+			if (!nextValue) {
+				return;
+			}
+			const nextPayload = JSON.stringify({
+				mockResponses: nextValue.mockResponses,
+				httpRules: nextValue.httpRules,
+				isRunning: nextValue.isRunning,
+			});
+			if (nextPayload === lastWrittenPayloadRef.current) {
+				return;
+			}
+			setMockResponses(nextValue.mockResponses);
+			setHttpRules(nextValue.httpRules);
+			setRunning(nextValue.isRunning);
+		};
+
+		chrome.storage.onChanged.addListener(handleStorageChange);
+		return () => chrome.storage.onChanged.removeListener(handleStorageChange);
+	}, []);
 
 	/**
 	 * Flips `enabled` on the item of the given kind and id.
@@ -112,6 +151,24 @@ export const usePopupItemsState = (): UsePopupItemsState => {
 		}
 	};
 
+	/**
+	 * Replaces the mock response with the same id as `item`, or appends it if no such item
+	 * exists yet.
+	 *
+	 * @param item - The mock response to insert or replace.
+	 */
+	const upsertMockResponse = (item: MockResponseItem) => {
+		setMockResponses((prev) => {
+			const existingIndex = prev.findIndex((existing) => existing.id === item.id);
+			if (existingIndex === -1) {
+				return [...prev, item];
+			}
+			const next = [...prev];
+			next[existingIndex] = item;
+			return next;
+		});
+	};
+
 	return {
 		mockResponses,
 		httpRules,
@@ -120,5 +177,6 @@ export const usePopupItemsState = (): UsePopupItemsState => {
 		toggleItem,
 		removeItem,
 		replaceItems,
+		upsertMockResponse,
 	};
 };

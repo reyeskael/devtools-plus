@@ -6,7 +6,7 @@ import { readFileAsText } from '../shared/files/readFileAsText';
 import { formatHttpRuleSummary, formatMockResponseSummary } from '../shared/items/formatters';
 import { parseImportedItems, toExportPayload } from '../shared/items/transfer';
 import type { HttpRuleItem, MockResponseItem, PopupItem } from '../shared/items/types';
-import { usePopupItemsState } from '../shared/hooks/usePopupItemsState';
+import { useItemsState } from '../shared/hooks/useItemsState';
 import { EmptyState } from './components/EmptyState';
 import { ImportDialog } from './components/ImportDialog';
 import { ItemRow, type ItemRowViewModel } from './components/ItemRow';
@@ -111,7 +111,7 @@ export const Popup = () => {
 		toggleItem,
 		removeItem,
 		replaceItems,
-	} = usePopupItemsState();
+	} = useItemsState();
 	const [activeTab, setActiveTab] = useState<PopupTabKey>('mock-responses');
 	const [importDialogOpen, setImportDialogOpen] = useState(false);
 	const [pastedText, setPastedText] = useState('');
