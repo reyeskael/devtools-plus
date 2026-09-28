@@ -12,8 +12,8 @@ interface SaveFeedback {
 /**
  * The `/mock-api` list page: a heading, an "Add" button that navigates to the create route,
  * the list of mock responses (via `MockApiRow`), an empty state when there are none, and a
- * save-confirmation snackbar driven by the `?saved=1` query param the editor page navigates
- * back with.
+ * confirmation snackbar driven by the `?saved=1`/`?deleted=1` query params the editor page
+ * navigates back with.
  *
  * @returns The Mock APIs list page UI.
  */
@@ -24,12 +24,16 @@ export const MockApiPage = () => {
 	const [feedback, setFeedback] = useState<SaveFeedback | null>(null);
 
 	// The ref guard satisfies the react-hooks/set-state-in-effect lint rule; it doesn't change
-	// behavior, since `search` only contains `saved=1` for this one, initial navigation anyway.
-	const hasShownSavedFeedbackRef = useRef(false);
+	// behavior, since `search` only contains these params for this one, initial navigation anyway.
+	const hasShownFeedbackRef = useRef(false);
 	useEffect(() => {
-		if (search.includes('saved=1') && !hasShownSavedFeedbackRef.current) {
-			hasShownSavedFeedbackRef.current = true;
+		if (search.includes('saved=1') && !hasShownFeedbackRef.current) {
+			hasShownFeedbackRef.current = true;
 			setFeedback({ severity: 'success', message: 'Mock response saved' });
+			setLocation('/mock-api', { replace: true });
+		} else if (search.includes('deleted=1') && !hasShownFeedbackRef.current) {
+			hasShownFeedbackRef.current = true;
+			setFeedback({ severity: 'success', message: 'Mock response deleted' });
 			setLocation('/mock-api', { replace: true });
 		}
 	}, [search, setLocation]);
@@ -50,7 +54,11 @@ export const MockApiPage = () => {
 			) : (
 				<List>
 					{mockResponses.map((item) => (
-						<MockApiRow key={item.id} item={item} />
+						<MockApiRow
+							key={item.id}
+							item={item}
+							onEdit={(id) => setLocation(`/mock-api/${id}`)}
+						/>
 					))}
 				</List>
 			)}

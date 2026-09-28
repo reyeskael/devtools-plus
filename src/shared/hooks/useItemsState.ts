@@ -38,7 +38,7 @@ export interface UseItemsState {
 export const useItemsState = (): UseItemsState => {
 	const [mockResponses, setMockResponses] = useState<MockResponseItem[]>(seedMockResponses);
 	const [httpRules, setHttpRules] = useState<HttpRuleItem[]>(seedHttpRules);
-	const [isRunning, setRunning] = useState(true);
+	const [isRunning, setIsRunning] = useState(true);
 	const [hasHydrated, setHasHydrated] = useState(false);
 	const hasHydratedRef = useRef(false);
 	const lastWrittenPayloadRef = useRef<string | null>(null);
@@ -53,7 +53,7 @@ export const useItemsState = (): UseItemsState => {
 			if (stored) {
 				setMockResponses(stored.mockResponses);
 				setHttpRules(stored.httpRules);
-				setRunning(stored.isRunning);
+				setIsRunning(stored.isRunning);
 			}
 			hasHydratedRef.current = true;
 			setHasHydrated(true);
@@ -61,19 +61,21 @@ export const useItemsState = (): UseItemsState => {
 	}, []);
 
 	/**
-	 * Persists every change, but only after the initial load has completed — otherwise this
-	 * would overwrite real stored data with the defaults while the get() above is still in
-	 * flight. Also records the written payload so the `onChanged` listener below can recognize
-	 * and ignore the event this write itself fires.
+	 * Writes a full state payload to storage immediately, at the point of mutation, rather than
+	 * via a `useEffect` keyed on state — a mutate-then-navigate handler (e.g. the app's editor
+	 * Save/Delete) can unmount this hook's owning component in the same commit as the state
+	 * update, dropping a would-be effect before it runs. Also records the payload so the
+	 * `onChanged` listener below can ignore the event this write itself fires.
+	 *
+	 * @param next - The full `{ mockResponses, httpRules, isRunning }` state to persist.
 	 */
-	useEffect(() => {
+	const persist = (next: StoredPopupItemsState) => {
 		if (!hasHydratedRef.current) {
 			return;
 		}
-		const payload = { mockResponses, httpRules, isRunning };
-		lastWrittenPayloadRef.current = JSON.stringify(payload);
-		chrome.storage.local.set({ [STORAGE_KEY]: payload });
-	}, [mockResponses, httpRules, isRunning]);
+		lastWrittenPayloadRef.current = JSON.stringify(next);
+		chrome.storage.local.set({ [STORAGE_KEY]: next });
+	};
 
 	/**
 	 * Mirrors state written by another mounted instance of this hook (e.g. the popup and an
@@ -102,7 +104,7 @@ export const useItemsState = (): UseItemsState => {
 			}
 			setMockResponses(nextValue.mockResponses);
 			setHttpRules(nextValue.httpRules);
-			setRunning(nextValue.isRunning);
+			setIsRunning(nextValue.isRunning);
 		};
 
 		chrome.storage.onChanged.addListener(handleStorageChange);
@@ -117,14 +119,18 @@ export const useItemsState = (): UseItemsState => {
 	 */
 	const toggleItem = (kind: PopupItem['kind'], id: string) => {
 		if (kind === 'mock-response') {
-			setMockResponses((prev) =>
-				prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item)),
+			const next = mockResponses.map((item) =>
+				item.id === id ? { ...item, enabled: !item.enabled } : item,
 			);
+			setMockResponses(next);
+			persist({ mockResponses: next, httpRules, isRunning });
 			return;
 		}
-		setHttpRules((prev) =>
-			prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item)),
+		const next = httpRules.map((item) =>
+			item.id === id ? { ...item, enabled: !item.enabled } : item,
 		);
+		setHttpRules(next);
+		persist({ mockResponses, httpRules: next, isRunning });
 	};
 
 	/**
@@ -135,10 +141,14 @@ export const useItemsState = (): UseItemsState => {
 	 */
 	const removeItem = (kind: PopupItem['kind'], id: string) => {
 		if (kind === 'mock-response') {
-			setMockResponses((prev) => prev.filter((item) => item.id !== id));
+			const next = mockResponses.filter((item) => item.id !== id);
+			setMockResponses(next);
+			persist({ mockResponses: next, httpRules, isRunning });
 			return;
 		}
-		setHttpRules((prev) => prev.filter((item) => item.id !== id));
+		const next = httpRules.filter((item) => item.id !== id);
+		setHttpRules(next);
+		persist({ mockResponses, httpRules: next, isRunning });
 	};
 
 	/**
@@ -152,12 +162,15 @@ export const useItemsState = (): UseItemsState => {
 		nextMockResponses?: MockResponseItem[],
 		nextHttpRules?: HttpRuleItem[],
 	) => {
+		const resolvedMockResponses = nextMockResponses ?? mockResponses;
+		const resolvedHttpRules = nextHttpRules ?? httpRules;
 		if (nextMockResponses !== undefined) {
 			setMockResponses(nextMockResponses);
 		}
 		if (nextHttpRules !== undefined) {
 			setHttpRules(nextHttpRules);
 		}
+		persist({ mockResponses: resolvedMockResponses, httpRules: resolvedHttpRules, isRunning });
 	};
 
 	/**
@@ -167,15 +180,23 @@ export const useItemsState = (): UseItemsState => {
 	 * @param item - The mock response to insert or replace.
 	 */
 	const upsertMockResponse = (item: MockResponseItem) => {
-		setMockResponses((prev) => {
-			const existingIndex = prev.findIndex((existing) => existing.id === item.id);
-			if (existingIndex === -1) {
-				return [...prev, item];
-			}
-			const next = [...prev];
-			next[existingIndex] = item;
-			return next;
-		});
+		const existingIndex = mockResponses.findIndex((existing) => existing.id === item.id);
+		const next =
+			existingIndex === -1
+				? [...mockResponses, item]
+				: mockResponses.map((existing, index) => (index === existingIndex ? item : existing));
+		setMockResponses(next);
+		persist({ mockResponses: next, httpRules, isRunning });
+	};
+
+	/**
+	 * Sets whether interception is running, persisting immediately (see `persist`).
+	 *
+	 * @param running - The new running state.
+	 */
+	const setRunning = (running: boolean) => {
+		setIsRunning(running);
+		persist({ mockResponses, httpRules, isRunning: running });
 	};
 
 	return {

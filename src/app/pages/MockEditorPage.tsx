@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, MenuItem } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { MockResponseForm } from '../components/MockResponseForm';
@@ -45,7 +45,7 @@ const draftFromItem = (item: MockResponseItem): MockResponseDraft => ({
  * after redirecting away from a stale id.
  */
 export const MockEditorPage = ({ id }: MockEditorPageProps) => {
-	const { mockResponses, hasHydrated, upsertMockResponse } = useItemsState();
+	const { mockResponses, hasHydrated, upsertMockResponse, removeItem } = useItemsState();
 	const [, setLocation] = useLocation();
 
 	const existingItem = id ? mockResponses.find((item) => item.id === id) : undefined;
@@ -67,8 +67,15 @@ export const MockEditorPage = ({ id }: MockEditorPageProps) => {
 		}
 	}, [existingItem]);
 
+	/**
+	 * Guards the stale-id redirect below from also firing right after a self-initiated delete,
+	 * which likewise makes `existingItem` (and so `notFound`) go from found to not-found — but
+	 * `handleDelete` has already navigated away with its own, more specific query param.
+	 */
+	const hasDeletedRef = useRef(false);
+
 	useEffect(() => {
-		if (notFound) {
+		if (notFound && !hasDeletedRef.current) {
 			setLocation('/mock-api', { replace: true });
 		}
 	}, [notFound, setLocation]);
@@ -92,6 +99,15 @@ export const MockEditorPage = ({ id }: MockEditorPageProps) => {
 		setLocation('/mock-api?saved=1');
 	};
 
+	/** Deletes the existing mock response and navigates back to the list, in edit mode only. */
+	const handleDelete = () => {
+		if (id !== undefined) {
+			hasDeletedRef.current = true;
+			removeItem('mock-response', id);
+			setLocation('/mock-api?deleted=1');
+		}
+	};
+
 	const breadcrumbLabel = id ? draft.name.trim() || 'Edit mock' : 'New mock';
 
 	return (
@@ -103,6 +119,7 @@ export const MockEditorPage = ({ id }: MockEditorPageProps) => {
 				breadcrumbLabel={breadcrumbLabel}
 				onBreadcrumbBack={() => setLocation('/mock-api')}
 				onSave={handleSave}
+				overflowMenuItems={id ? <MenuItem onClick={handleDelete}>Delete</MenuItem> : undefined}
 			/>
 		</Box>
 	);

@@ -94,8 +94,34 @@ describe('MockApiPage', () => {
 		expect(history.at(-1)).toBe('/mock-api');
 	});
 
-	it('does not show the snackbar when there is no ?saved=1 query param', () => {
+	it('does not show the save or delete snackbar when there is no ?saved=1/?deleted=1 query param', () => {
 		renderAtPath('/mock-api');
 		expect(screen.queryByText('Mock response saved')).not.toBeInTheDocument();
+		expect(screen.queryByText('Mock response deleted')).not.toBeInTheDocument();
+	});
+
+	it('shows a delete-confirmation snackbar when the path has ?deleted=1 and strips the query param', () => {
+		const { history } = renderAtPath('/mock-api?deleted=1');
+		expect(screen.getByText('Mock response deleted')).toBeInTheDocument();
+		expect(history.at(-1)).toBe('/mock-api');
+	});
+
+	it('navigates to /mock-api/{id} when a row edit button is clicked', async () => {
+		chrome.storage.local.set({
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+		});
+		const { history } = renderAtPath('/mock-api');
+		await userEvent.click(screen.getByRole('button', { name: `Edit ${fixtureMockResponses[0].name}` }));
+		expect(history.at(-1)).toBe(`/mock-api/${fixtureMockResponses[0].id}`);
+	});
+
+	it('navigates to the specific row\'s id when a non-first row\'s edit button is clicked', async () => {
+		chrome.storage.local.set({
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+		});
+		const { history } = renderAtPath('/mock-api');
+		await userEvent.click(screen.getByRole('button', { name: `Edit ${fixtureMockResponses[1].name}` }));
+		expect(history.at(-1)).toBe(`/mock-api/${fixtureMockResponses[1].id}`);
+		expect(history.at(-1)).not.toBe(`/mock-api/${fixtureMockResponses[0].id}`);
 	});
 });

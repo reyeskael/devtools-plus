@@ -205,10 +205,52 @@ describe('MockEditorPage', () => {
 			expect(lastCallPayload.mockResponses).toEqual([existingItem]);
 		});
 
-		it('does not render an overflow "More" menu button', () => {
+		it('renders an overflow "More" menu button', () => {
 			seedStorage([existingItem]);
 			renderEditor(existingItem.id);
-			expect(screen.queryByRole('button', { name: /more menu/i })).not.toBeInTheDocument();
+			expect(screen.getByRole('button', { name: /more menu/i })).toBeInTheDocument();
+		});
+
+		it('deletes the item and navigates to /mock-api?deleted=1 when Delete is clicked', async () => {
+			seedStorage([existingItem]);
+			const { history } = renderEditor(existingItem.id);
+
+			await userEvent.click(screen.getByRole('button', { name: /more menu/i }));
+			await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+
+			// Pins the `hasDeletedRef` guard in MockEditorPage: deleting makes `existingItem` go
+			// from found to not-found within the same render pass, which would otherwise also
+			// satisfy the pre-existing stale-id `notFound` effect and have it clobber this
+			// navigation with a plain, param-less `replace: true` to `/mock-api` (overwriting
+			// this same history entry rather than appending a new one). Asserting the full
+			// history array, not just its last entry, catches that even if some other change
+			// happened to leave the last entry alone but altered the sequence.
+			expect(history).toEqual(['/mock-api', '/mock-api?deleted=1']);
+			const setMock = chrome.storage.local.set as jest.Mock;
+			const lastCallPayload = setMock.mock.calls.at(-1)[0][STORAGE_KEY];
+			expect(lastCallPayload.mockResponses).toEqual([]);
+		});
+
+		it('deletes only the targeted item, leaving other mock responses untouched', async () => {
+			const otherItem: MockResponseItem = {
+				id: 'mr-2',
+				name: 'Create order',
+				kind: 'mock-response',
+				enabled: true,
+				method: 'POST',
+				urlPattern: '/api/orders',
+				statusCode: 201,
+			};
+			seedStorage([existingItem, otherItem]);
+			const { history } = renderEditor(existingItem.id);
+
+			await userEvent.click(screen.getByRole('button', { name: /more menu/i }));
+			await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+
+			expect(history.at(-1)).toBe('/mock-api?deleted=1');
+			const setMock = chrome.storage.local.set as jest.Mock;
+			const lastCallPayload = setMock.mock.calls.at(-1)[0][STORAGE_KEY];
+			expect(lastCallPayload.mockResponses).toEqual([otherItem]);
 		});
 	});
 });
