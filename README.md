@@ -36,7 +36,7 @@ Then load it into Chrome:
 2. Enable **Developer mode**
 3. **Load unpacked** → select the `dist/` folder
 
-For a production bundle, use `yarn build` instead and load the same `dist/` folder.
+For a production bundle, use `yarn build` instead and load the same `dist/` folder. If you need to debug a production-shaped build (unminified output with source maps), use `yarn build:debug` instead.
 
 > **Heads up:** the interceptor runs in the page's **main world**, which `@crxjs/vite-plugin` cannot hot-reload. Changes to anything under `src/content/interceptor/` need a manual extension reload (and a page reload) to take effect. Popup and app changes hot-reload normally.
 
@@ -46,6 +46,7 @@ For a production bundle, use `yarn build` instead and load the same `dist/` fold
 | --- | --- |
 | `yarn dev` | Vite dev server with extension HMR |
 | `yarn build` | Production build into `dist/` |
+| `yarn build:debug` | Production build, unminified with source maps, into `dist/` |
 | `yarn test` | Jest test suite |
 | `yarn test:watch` | Jest in watch mode |
 | `yarn lint` | ESLint over the repo |

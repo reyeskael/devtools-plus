@@ -15,6 +15,7 @@ nvm use               # Node 24.16.0, per .nvmrc
 yarn install
 yarn dev               # Vite dev server + extension build into dist/, with HMR
 yarn build             # production build into dist/
+yarn build:debug       # production build into dist/, unminified with source maps
 yarn test              # Jest (ts-jest, jsdom)
 yarn test:watch
 yarn lint              # ESLint

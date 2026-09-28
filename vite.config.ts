@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { crx } from '@crxjs/vite-plugin';
 import manifest from './manifest.config';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
 	plugins: [
 		react(),
 		crx({
@@ -14,6 +14,8 @@ export default defineConfig({
 		}),
 	],
 	build: {
+		minify: mode !== 'debug',
+		sourcemap: mode === 'debug',
 		rollupOptions: {
 			input: {
 				app: 'src/app/index.html',
@@ -27,4 +29,4 @@ export default defineConfig({
 			port: 5173,
 		},
 	},
-});
+}));
