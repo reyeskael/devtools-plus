@@ -17,10 +17,13 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@codemirror/lang-json": "^6.0.2",
+		"@codemirror/lint": "^6.9.7",
 		"@emotion/react": "^11.14.0",
 		"@emotion/styled": "^11.14.1",
 		"@mui/icons-material": "^9.4.0",
 		"@mui/material": "^9.4.0",
+		"@uiw/react-codemirror": "^4.25.12",
 		"react": "^19.3.0",
 		"react-dom": "^19.3.0"
 	},
