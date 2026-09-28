@@ -1,7 +1,9 @@
 import type { HttpRuleItem, MockResponseItem } from './types';
 
+/** Default mock responses `usePopupItemsState` renders before storage hydration completes. */
 export const seedMockResponses: MockResponseItem[] = [];
 
+/** Default HTTP rules `usePopupItemsState` renders before storage hydration completes. */
 export const seedHttpRules: HttpRuleItem[] = [
 	{
 		id: 'rule-block-legacy',

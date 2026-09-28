@@ -3,13 +3,27 @@ import type { HttpMethod, HttpRuleItem, MockResponseItem, PopupItem } from './ty
 const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 const HTTP_RULE_ACTIONS: HttpRuleItem['action'][] = ['block', 'redirect', 'modify-headers'];
 
+/** Result of {@link parseImportedItems}: the parsed items, or the first validation error hit. */
 export type ParseResult =
 	| { ok: true; mockResponses: MockResponseItem[]; httpRules: HttpRuleItem[] }
 	| { ok: false; error: string };
 
+/**
+ * Serializes items for the Export feature's downloaded `.json` file.
+ *
+ * @param items - The mock responses and/or HTTP rules to export.
+ * @returns Pretty-printed JSON, newline-terminated.
+ */
 export const toExportPayload = (items: PopupItem[]): string =>
 	`${JSON.stringify(items, null, '\t')}\n`;
 
+/**
+ * Builds a human-readable label for an entry in a validation error message.
+ *
+ * @param index - The entry's position in the imported array.
+ * @param entry - The raw, not-yet-validated entry.
+ * @returns `"entry N (id \"...\")"` when an id can be read off the entry, else `"entry N"`.
+ */
 const describeEntry = (index: number, entry: unknown): string => {
 	if (
 		entry &&
@@ -22,6 +36,13 @@ const describeEntry = (index: number, entry: unknown): string => {
 	return `entry ${index}`;
 };
 
+/**
+ * Validates the fields every item shares, regardless of kind.
+ *
+ * @param index - The entry's position in the imported array.
+ * @param entry - The raw, not-yet-validated entry.
+ * @returns An error message, or `null` if the common fields are valid.
+ */
 const validateCommon = (index: number, entry: Record<string, unknown>): string | null => {
 	if (typeof entry.id !== 'string' || entry.id.length === 0) {
 		return `${describeEntry(index, entry)}: "id" must be a non-empty string`;
@@ -38,6 +59,13 @@ const validateCommon = (index: number, entry: Record<string, unknown>): string |
 	return null;
 };
 
+/**
+ * Validates the fields specific to a `mock-response` entry.
+ *
+ * @param index - The entry's position in the imported array.
+ * @param entry - The raw, not-yet-validated entry.
+ * @returns An error message, or `null` if the mock-response fields are valid.
+ */
 const validateMockResponse = (index: number, entry: Record<string, unknown>): string | null => {
 	if (typeof entry.method !== 'string' || !HTTP_METHODS.includes(entry.method as HttpMethod)) {
 		return `${describeEntry(index, entry)}: "method" must be one of ${HTTP_METHODS.join(', ')}`;
@@ -54,6 +82,13 @@ const validateMockResponse = (index: number, entry: Record<string, unknown>): st
 	return null;
 };
 
+/**
+ * Validates the fields specific to an `http-rule` entry.
+ *
+ * @param index - The entry's position in the imported array.
+ * @param entry - The raw, not-yet-validated entry.
+ * @returns An error message, or `null` if the http-rule fields are valid.
+ */
 const validateHttpRule = (index: number, entry: Record<string, unknown>): string | null => {
 	if (typeof entry.urlPattern !== 'string') {
 		return `${describeEntry(index, entry)}: "urlPattern" must be a string`;
@@ -70,6 +105,15 @@ const validateHttpRule = (index: number, entry: Record<string, unknown>): string
 	return null;
 };
 
+/**
+ * Parses and validates the Import feature's input — a JSON array of items, either picked as a
+ * `.json` file or pasted as text — splitting valid entries into mock responses and HTTP rules.
+ *
+ * @param text - The raw JSON text to parse.
+ * @returns `{ ok: true, mockResponses, httpRules }` on success, or `{ ok: false, error }` with
+ * the first validation failure encountered (JSON parse error, non-array root, unknown `kind`,
+ * duplicate `id`, or a missing/mistyped field).
+ */
 export const parseImportedItems = (text: string): ParseResult => {
 	let parsed: unknown;
 	try {
