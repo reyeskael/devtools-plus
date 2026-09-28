@@ -232,6 +232,37 @@ describe('createFetchInterceptor', () => {
 		expectMockResponse(result, { status: 500, statusText: 'Internal Server Error', body: '' });
 	});
 
+	it.each([204, 205, 304])(
+		'strips the body for a mocked %d response even when the mock has a non-empty body',
+		async (statusCode) => {
+			const nullBodyItem: MockResponseItem = {
+				id: `mock-null-body-${statusCode}`,
+				name: `Null body ${statusCode}`,
+				kind: 'mock-response',
+				enabled: true,
+				method: 'GET',
+				urlPattern: '/api/null-body',
+				statusCode,
+				statusText: 'No Content',
+				body: { this: 'should not leak into the response body' },
+			};
+			const ruleGate = createRuleGate();
+			ruleGate.setSnapshot(snapshotWith({ mockResponses: [nullBodyItem] }));
+			const originalFetch = createOriginalFetch();
+			const interceptor = createFetchInterceptor({
+				originalFetch,
+				makeResponse,
+				ruleGate,
+				getBaseUrl: () => 'https://example.com',
+				notifyMockApplied: jest.fn(),
+			});
+
+			const result = await interceptor('https://example.com/api/null-body');
+
+			expectMockResponse(result, { status: statusCode, statusText: 'No Content', body: '' });
+		},
+	);
+
 	it('applies a later setSnapshot call to subsequent requests immediately, with no request needing to wait', async () => {
 		const ruleGate = createRuleGate();
 		ruleGate.setSnapshot(snapshotWith());

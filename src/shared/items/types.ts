@@ -7,6 +7,16 @@ interface PopupItemBase {
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
 
+export const HTTP_METHODS: HttpMethod[] = [
+	'GET',
+	'POST',
+	'PUT',
+	'PATCH',
+	'DELETE',
+	'HEAD',
+	'OPTIONS',
+];
+
 /**
  * A single mocked response rule: when `method` and `urlPattern` match a request, the
  * interceptor serves `statusCode`/`statusText`/`body` back instead of hitting the network.

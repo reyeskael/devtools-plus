@@ -1,6 +1,6 @@
+import { HTTP_METHODS } from './types';
 import type { HttpMethod, HttpRuleItem, MockResponseItem, PopupItem } from './types';
 
-const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 const HTTP_RULE_ACTIONS: HttpRuleItem['action'][] = ['block', 'redirect', 'modify-headers'];
 
 /** Result of {@link parseImportedItems}: the parsed items, or the first validation error hit. */
@@ -70,8 +70,8 @@ const validateMockResponse = (index: number, entry: Record<string, unknown>): st
 	if (typeof entry.method !== 'string' || !HTTP_METHODS.includes(entry.method as HttpMethod)) {
 		return `${describeEntry(index, entry)}: "method" must be one of ${HTTP_METHODS.join(', ')}`;
 	}
-	if (typeof entry.urlPattern !== 'string') {
-		return `${describeEntry(index, entry)}: "urlPattern" must be a string`;
+	if (typeof entry.urlPattern !== 'string' || entry.urlPattern.length === 0) {
+		return `${describeEntry(index, entry)}: "urlPattern" must be a non-empty string`;
 	}
 	if (typeof entry.statusCode !== 'number') {
 		return `${describeEntry(index, entry)}: "statusCode" must be a number`;
@@ -90,8 +90,8 @@ const validateMockResponse = (index: number, entry: Record<string, unknown>): st
  * @returns An error message, or `null` if the http-rule fields are valid.
  */
 const validateHttpRule = (index: number, entry: Record<string, unknown>): string | null => {
-	if (typeof entry.urlPattern !== 'string') {
-		return `${describeEntry(index, entry)}: "urlPattern" must be a string`;
+	if (typeof entry.urlPattern !== 'string' || entry.urlPattern.length === 0) {
+		return `${describeEntry(index, entry)}: "urlPattern" must be a non-empty string`;
 	}
 	if (
 		typeof entry.action !== 'string' ||

@@ -40,6 +40,60 @@ describe('toMockResponseInit', () => {
 		expect(result.body).toBe('');
 	});
 
+	it('strips the body for a 204 status even when a non-empty body is set', () => {
+		const item: MockResponseItem = {
+			id: 'mock-null-body-204',
+			name: 'Null body 204',
+			kind: 'mock-response',
+			enabled: true,
+			method: 'GET',
+			urlPattern: '/api/null-body-204',
+			statusCode: 204,
+			body: { this: 'should not appear' },
+		};
+
+		const result = toMockResponseInit(item);
+
+		expect(result.status).toBe(204);
+		expect(result.body).toBe('');
+	});
+
+	it('strips the body for a 205 status even when a non-empty body is set', () => {
+		const item: MockResponseItem = {
+			id: 'mock-null-body-205',
+			name: 'Null body 205',
+			kind: 'mock-response',
+			enabled: true,
+			method: 'GET',
+			urlPattern: '/api/null-body-205',
+			statusCode: 205,
+			body: { this: 'should not appear' },
+		};
+
+		const result = toMockResponseInit(item);
+
+		expect(result.status).toBe(205);
+		expect(result.body).toBe('');
+	});
+
+	it('strips the body for a 304 status even when a non-empty body is set', () => {
+		const item: MockResponseItem = {
+			id: 'mock-null-body-304',
+			name: 'Null body 304',
+			kind: 'mock-response',
+			enabled: true,
+			method: 'GET',
+			urlPattern: '/api/null-body-304',
+			statusCode: 304,
+			body: { this: 'should not appear' },
+		};
+
+		const result = toMockResponseInit(item);
+
+		expect(result.status).toBe(304);
+		expect(result.body).toBe('');
+	});
+
 	it('defaults statusText to an empty string when absent', () => {
 		const item: MockResponseItem = {
 			id: 'mock-no-status-text',

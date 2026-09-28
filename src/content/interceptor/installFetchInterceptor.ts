@@ -90,10 +90,6 @@ export const createFetchInterceptor = ({
 	};
 };
 
-// Statuses that the Fetch spec forbids from carrying a body ("null body status").
-// Passing a non-empty body for one of these throws when constructing a Response.
-const NULL_BODY_STATUSES = new Set([204, 205, 304]);
-
 /**
  * Patches `window.fetch` with the mock-aware interceptor.
  *
@@ -103,8 +99,7 @@ const NULL_BODY_STATUSES = new Set([204, 205, 304]);
 export const installFetchInterceptor = (ruleGate: RuleGate): (() => void) => {
 	const originalFetch = window.fetch.bind(window);
 	const makeResponse = (init: MockResponseInit): Response => {
-		const body =
-			init.body === '' || NULL_BODY_STATUSES.has(init.status) ? undefined : init.body;
+		const body = init.body === '' ? undefined : init.body;
 
 		try {
 			return new Response(body, {

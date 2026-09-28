@@ -166,14 +166,21 @@ describe('parseImportedItems', () => {
 			const error = expectFailure(
 				parseImportedItems(JSON.stringify([omit(validMockResponse, 'urlPattern')])),
 			);
-			expect(error).toMatch(/"urlPattern" must be a string/);
+			expect(error).toMatch(/"urlPattern" must be a non-empty string/);
 		});
 
 		it('rejects a non-string urlPattern', () => {
 			const error = expectFailure(
 				parseImportedItems(JSON.stringify([{ ...validMockResponse, urlPattern: 42 }])),
 			);
-			expect(error).toMatch(/"urlPattern" must be a string/);
+			expect(error).toMatch(/"urlPattern" must be a non-empty string/);
+		});
+
+		it('rejects an empty-string urlPattern', () => {
+			const error = expectFailure(
+				parseImportedItems(JSON.stringify([{ ...validMockResponse, urlPattern: '' }])),
+			);
+			expect(error).toMatch(/"urlPattern" must be a non-empty string/);
 		});
 
 		it('rejects a missing statusCode', () => {
@@ -210,14 +217,21 @@ describe('parseImportedItems', () => {
 			const error = expectFailure(
 				parseImportedItems(JSON.stringify([omit(validHttpRule, 'urlPattern')])),
 			);
-			expect(error).toMatch(/"urlPattern" must be a string/);
+			expect(error).toMatch(/"urlPattern" must be a non-empty string/);
 		});
 
 		it('rejects a non-string urlPattern', () => {
 			const error = expectFailure(
 				parseImportedItems(JSON.stringify([{ ...validHttpRule, urlPattern: 42 }])),
 			);
-			expect(error).toMatch(/"urlPattern" must be a string/);
+			expect(error).toMatch(/"urlPattern" must be a non-empty string/);
+		});
+
+		it('rejects an empty-string urlPattern', () => {
+			const error = expectFailure(
+				parseImportedItems(JSON.stringify([{ ...validHttpRule, urlPattern: '' }])),
+			);
+			expect(error).toMatch(/"urlPattern" must be a non-empty string/);
 		});
 
 		it('rejects a missing action', () => {

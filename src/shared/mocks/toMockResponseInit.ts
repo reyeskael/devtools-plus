@@ -1,3 +1,4 @@
+import { NULL_BODY_STATUSES } from './nullBodyStatuses';
 import type { MockResponseItem } from '../items/types';
 
 export interface MockResponseInit {
@@ -12,10 +13,14 @@ export interface MockResponseInit {
  *
  * @param item - The mock response item to convert.
  * @returns The status code, status text (empty string if unset), and JSON-stringified body
- * (empty string if `body` is `undefined`).
+ * (empty string if `body` is `undefined`, and always empty string for a status in
+ * {@link NULL_BODY_STATUSES}, regardless of `item.body`).
  */
 export const toMockResponseInit = (item: MockResponseItem): MockResponseInit => ({
 	status: item.statusCode,
 	statusText: item.statusText ?? '',
-	body: item.body === undefined ? '' : (JSON.stringify(item.body) ?? ''),
+	body:
+		item.body === undefined || NULL_BODY_STATUSES.has(item.statusCode)
+			? ''
+			: (JSON.stringify(item.body) ?? ''),
 });

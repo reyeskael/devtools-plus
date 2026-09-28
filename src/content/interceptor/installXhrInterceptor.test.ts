@@ -147,6 +147,35 @@ describe('installXhrInterceptor', () => {
 		expect(xhr.responseText).toBe('');
 	});
 
+	it.each([204, 205, 304])(
+		'strips responseText for a mocked %d response even when the mock has a non-empty body (regression: XHR used to leak the JSON body for null-body statuses)',
+		async (statusCode) => {
+			const nullBodyItem: MockResponseItem = {
+				id: `mock-null-body-${statusCode}`,
+				name: `Null body ${statusCode}`,
+				kind: 'mock-response',
+				enabled: true,
+				method: 'GET',
+				urlPattern: '/api/null-body',
+				statusCode,
+				statusText: 'No Content',
+				body: { this: 'should not leak into responseText' },
+			};
+			const ruleGate = createRuleGate();
+			ruleGate.setSnapshot(snapshotWith({ mockResponses: [nullBodyItem] }));
+			teardown = installXhrInterceptor(ruleGate, () => 'https://example.com');
+
+			const xhr = new XMLHttpRequest();
+			const loaded = waitForLoad(xhr);
+			xhr.open('GET', 'https://example.com/api/null-body');
+			xhr.send();
+			await loaded;
+
+			expect(xhr.status).toBe(statusCode);
+			expect(xhr.responseText).toBe('');
+		},
+	);
+
 	it('applies a later setSnapshot call to subsequent requests immediately, with no request needing to wait', async () => {
 		const ruleGate = createRuleGate();
 		ruleGate.setSnapshot(snapshotWith());
