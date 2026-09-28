@@ -53,18 +53,22 @@ For a production bundle, use `yarn build` instead and load the same `dist/` fold
 | `yarn format` | Prettier write |
 | `yarn typecheck` | `tsc --noEmit` |
 
+## Git hooks
+
+A Husky `pre-push` hook runs `yarn test` before every push and blocks it if any test fails. It's installed automatically by the `prepare` script when you run `yarn install` — nothing else to set up. The hook sources `nvm` and runs `nvm use` itself before testing, since git hooks don't inherit your shell's active Node version.
+
 ## Architecture
 
 The extension is split into three pieces — popup, an ISOLATED-world bridge, and a MAIN-world interceptor, plus the background service worker for the badge — connected by a one-way data flow through `chrome.storage`, with a `postMessage` return leg for the per-tab badge count. See **[docs/architecture.md](docs/architecture.md)** for the full data flow, the bootstrap race and how it's resolved, matching semantics, what is and isn't intercepted, badge behavior, the `<all_urls>` permission justification, and the project's file layout.
 
 ## Defining mocks
 
-There's no seed data anymore — a fresh install shows the popup's empty state. Until there's a full editor UI, the way to get data into the tool is the **Export/Import** feature in the popup toolbar:
+A fresh install starts from the popup's empty state. Until there's a full editor UI, the way to get data into the tool is the **Export/Import** feature in the popup toolbar:
 
 - **Export** downloads all current items (mock responses and HTTP rules) as a single `.json` file.
 - **Import** accepts a `.json` file via a file picker, or pasted JSON text, and replaces whichever of mock responses / HTTP rules are present in the file (a file with only mocks leaves existing HTTP rules untouched, and vice versa).
 
-`src/shared/items/__fixtures__/sample-mock-responses.json` is a worked example of the import format — used in tests, not bundled as seed data. Each entry is a `MockResponseItem` or `HttpRuleItem` (`src/shared/items/types.ts`); for a `MockResponseItem`:
+`src/shared/items/__fixtures__/sample-mock-responses.json` is a worked example of the import format, used in tests. Each entry is a `MockResponseItem` or `HttpRuleItem` (`src/shared/items/types.ts`); for a `MockResponseItem`:
 
 ```json
 {

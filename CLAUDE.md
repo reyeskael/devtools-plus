@@ -29,19 +29,23 @@ Loading the extension: `yarn dev` or `yarn build`, then in `chrome://extensions`
 
 **Heads up:** the interceptor (`src/content/interceptor/`) runs in the page's MAIN world, which `@crxjs/vite-plugin` cannot hot-reload. Changes there need a manual extension reload plus a page reload. Popup and app changes hot-reload normally.
 
+### Git hooks
+
+A Husky `pre-push` hook (`.husky/pre-push`) runs `yarn test` before every push and blocks it if any test fails. It sources `nvm` and runs `nvm use` itself, since git hooks run in a bare shell without the `.nvmrc` version already active. Installed automatically via the `prepare` script on `yarn install` — no separate setup step.
+
 ## Architecture
 
 A main-world script has no access to `chrome.*` APIs, and a content script in the isolated world cannot patch the page's globals (`fetch`, `XMLHttpRequest`). The extension is split into three pieces connected by a one-way data flow, all triggered by `chrome.storage.onChanged` — there is no message passing through the background service worker, so nothing races the MV3 service worker lifecycle:
 
 ```
-popup (usePopupItemsState)
+popup (useItemsState)
   └─ chrome.storage.local['popupItemsState']
        └─ bridge — isolated content script, chrome.storage.onChanged
             └─ window.postMessage
                  └─ interceptor — MAIN world, patches fetch + XHR
 ```
 
-1. **Popup** (`src/shared/hooks/usePopupItemsState.ts`) owns `{ mockResponses, httpRules, isRunning }` and persists the whole blob to `chrome.storage.local` on every change.
+1. **Popup** (`src/shared/hooks/useItemsState.ts`) owns `{ mockResponses, httpRules, isRunning }` and persists the whole blob to `chrome.storage.local` on every change.
 2. **Bridge** (`src/content/bridge/`) reads that key on load and subscribes to `chrome.storage.onChanged`, posting a rule snapshot into the page on each change.
 3. **Interceptor** (`src/content/interceptor/`) replaces `window.fetch` and patches `XMLHttpRequest`, keeping the latest snapshot in a **rule gate** (`ruleGate.ts`).
 
@@ -68,14 +72,14 @@ src/
     mocks/                    Matching + response construction
     messaging/                Cross-world message types and validation
     storage/                  Storage key (kept dependency-free on purpose)
-    hooks/                    usePopupItemsState
+    hooks/                    useItemsState
     chrome/                   openApp helper
     theme.tsx                 MUI theme + provider
 ```
 
 ### Mock data shape
 
-There's no JSON seed file anymore — a fresh install shows the popup's empty state. Data gets into the tool via the popup toolbar's **Export/Import** feature: Export downloads all current items (mock responses and HTTP rules) as a `.json` file; Import accepts a `.json` file via a file picker or pasted JSON text, replacing whichever of mock responses / HTTP rules are present in the file (`src/shared/items/transfer.ts` does the parsing/validation, dependency-free of `chrome.*`/DOM). `src/shared/items/__fixtures__/sample-mock-responses.json` is a worked example of the import format, used in tests — not bundled as seed data. Each entry is a `MockResponseItem` (`src/shared/items/types.ts`):
+A fresh install shows the popup's empty state. Data gets into the tool via the popup toolbar's **Export/Import** feature: Export downloads all current items (mock responses and HTTP rules) as a `.json` file; Import accepts a `.json` file via a file picker or pasted JSON text, replacing whichever of mock responses / HTTP rules are present in the file (`src/shared/items/transfer.ts` does the parsing/validation, dependency-free of `chrome.*`/DOM). `src/shared/items/__fixtures__/sample-mock-responses.json` is a worked example of the import format, used in tests. Each entry is a `MockResponseItem` (`src/shared/items/types.ts`):
 
 ```json
 {
