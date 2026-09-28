@@ -25,7 +25,8 @@
 		"@mui/material": "^9.4.0",
 		"@uiw/react-codemirror": "^4.25.12",
 		"react": "^19.3.0",
-		"react-dom": "^19.3.0"
+		"react-dom": "^19.3.0",
+		"wouter": "^3.11.0"
 	},
 	"devDependencies": {
 		"@crxjs/vite-plugin": "^2.7.1",
