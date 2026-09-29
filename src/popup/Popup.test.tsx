@@ -157,26 +157,35 @@ describe('Popup', () => {
 				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
 			}
 		});
+	});
 
-		it('shows the seeded HTTP rules only on the http-rules tab', async () => {
+	describe('http-rules placeholder', () => {
+		it('shows the under-construction placeholder instead of the seeded HTTP rules', async () => {
 			render(<Popup />);
 			await userEvent.click(httpRulesTab());
 
+			expect(screen.getByText('HTTP Rules is under construction')).toBeInTheDocument();
 			for (const item of fixtureHttpRules) {
-				expect(screen.getByText(item.name)).toBeInTheDocument();
-			}
-			for (const item of fixtureMockResponses) {
 				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
 			}
 
 			await userEvent.click(mockResponsesTab());
 
-			for (const item of fixtureHttpRules) {
-				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
-			}
+			expect(
+				screen.queryByText('HTTP Rules is under construction'),
+			).not.toBeInTheDocument();
 			for (const item of fixtureMockResponses) {
 				expect(screen.getByText(item.name)).toBeInTheDocument();
 			}
+		});
+
+		it('hides the toolbar (Export/Import/Add) on the http-rules tab', async () => {
+			render(<Popup />);
+			await userEvent.click(httpRulesTab());
+
+			expect(screen.queryByRole('button', { name: 'Export' })).not.toBeInTheDocument();
+			expect(screen.queryByRole('button', { name: 'Import' })).not.toBeInTheDocument();
+			expect(screen.queryByRole('button', { name: /^add$/i })).not.toBeInTheDocument();
 		});
 	});
 
@@ -188,14 +197,6 @@ describe('Popup', () => {
 			expect(openApp).toHaveBeenCalledWith('mock-api');
 		});
 
-		it('calls openApp with "http-rules" when Add is clicked on the http-rules tab', async () => {
-			render(<Popup />);
-			await userEvent.click(httpRulesTab());
-			await userEvent.click(addButton());
-			expect(openApp).toHaveBeenCalledTimes(1);
-			expect(openApp).toHaveBeenCalledWith('http-rules');
-		});
-
 		it('calls openApp with "mock-api" from the empty-state action once every mock response is deleted', async () => {
 			render(<Popup />);
 			for (const item of fixtureMockResponses) {
@@ -205,18 +206,6 @@ describe('Popup', () => {
 			await userEvent.click(screen.getByRole('button', { name: /add mock response/i }));
 
 			expect(openApp).toHaveBeenCalledWith('mock-api');
-		});
-
-		it('calls openApp with "http-rules" from the empty-state action once every HTTP rule is deleted', async () => {
-			render(<Popup />);
-			await userEvent.click(httpRulesTab());
-			for (const item of fixtureHttpRules) {
-				await userEvent.click(deleteButton(item.name));
-			}
-
-			await userEvent.click(screen.getByRole('button', { name: /add http rule/i }));
-
-			expect(openApp).toHaveBeenCalledWith('http-rules');
 		});
 	});
 
@@ -233,45 +222,10 @@ describe('Popup', () => {
 			).toBeInTheDocument();
 		});
 
-		it('shows the http-rules empty-state copy once every HTTP rule is deleted', async () => {
-			render(<Popup />);
-			await userEvent.click(httpRulesTab());
-			for (const item of fixtureHttpRules) {
-				await userEvent.click(deleteButton(item.name));
-			}
-
-			expect(screen.getByText('No HTTP rules yet')).toBeInTheDocument();
-			expect(
-				screen.getByText('Add an HTTP rule in the full app to get started.'),
-			).toBeInTheDocument();
-		});
-
-		it('uses distinct empty-state copy for each tab', async () => {
-			render(<Popup />);
-			for (const item of fixtureMockResponses) {
-				await userEvent.click(deleteButton(item.name));
-			}
-			const mockResponsesHeadline = screen.getByText('No mock responses yet').textContent;
-			const mockResponsesBody = screen.getByText(
-				'Add a mock response in the full app to get started.',
-			).textContent;
-
-			await userEvent.click(httpRulesTab());
-			for (const item of fixtureHttpRules) {
-				await userEvent.click(deleteButton(item.name));
-			}
-			const httpRulesHeadline = screen.getByText('No HTTP rules yet').textContent;
-			const httpRulesBody = screen.getByText(
-				'Add an HTTP rule in the full app to get started.',
-			).textContent;
-
-			expect(mockResponsesHeadline).not.toBe(httpRulesHeadline);
-			expect(mockResponsesBody).not.toBe(httpRulesBody);
-		});
 	});
 
 	describe('toggling scoped to the active tab', () => {
-		it('toggles only the targeted mock-response item, leaving the rest of that tab and the http-rules tab untouched', async () => {
+		it('toggles only the targeted mock-response item, leaving the rest of that tab untouched', async () => {
 			render(<Popup />);
 			const target = fixtureMockResponses[0];
 			const others = fixtureMockResponses.filter((item) => item.id !== target.id);
@@ -283,37 +237,11 @@ describe('Popup', () => {
 			for (const item of others) {
 				expectRowSwitchChecked(item.name, item.enabled);
 			}
-
-			await userEvent.click(httpRulesTab());
-			for (const item of fixtureHttpRules) {
-				expectRowSwitchChecked(item.name, item.enabled);
-			}
-		});
-
-		it('toggles only the targeted http-rule item, leaving the rest of that tab and the mock-responses tab untouched', async () => {
-			render(<Popup />);
-			await userEvent.click(httpRulesTab());
-
-			const target = fixtureHttpRules[0];
-			const others = fixtureHttpRules.filter((item) => item.id !== target.id);
-
-			expectRowSwitchChecked(target.name, target.enabled);
-			await userEvent.click(rowSwitch(target.name));
-			expectRowSwitchChecked(target.name, !target.enabled);
-
-			for (const item of others) {
-				expectRowSwitchChecked(item.name, item.enabled);
-			}
-
-			await userEvent.click(mockResponsesTab());
-			for (const item of fixtureMockResponses) {
-				expectRowSwitchChecked(item.name, item.enabled);
-			}
 		});
 	});
 
 	describe('deleting scoped to the active tab', () => {
-		it('deletes only the targeted mock-response item, leaving the http-rules tab untouched', async () => {
+		it('deletes only the targeted mock-response item, leaving the rest of that tab untouched', async () => {
 			render(<Popup />);
 			const target = fixtureMockResponses[0];
 			const remaining = fixtureMockResponses.filter((item) => item.id !== target.id);
@@ -322,31 +250,6 @@ describe('Popup', () => {
 
 			expect(screen.queryByText(target.name)).not.toBeInTheDocument();
 			for (const item of remaining) {
-				expect(screen.getByText(item.name)).toBeInTheDocument();
-			}
-
-			await userEvent.click(httpRulesTab());
-			for (const item of fixtureHttpRules) {
-				expect(screen.getByText(item.name)).toBeInTheDocument();
-			}
-		});
-
-		it('deletes only the targeted http-rule item, leaving the mock-responses tab untouched', async () => {
-			render(<Popup />);
-			await userEvent.click(httpRulesTab());
-
-			const target = fixtureHttpRules[0];
-			const remaining = fixtureHttpRules.filter((item) => item.id !== target.id);
-
-			await userEvent.click(deleteButton(target.name));
-
-			expect(screen.queryByText(target.name)).not.toBeInTheDocument();
-			for (const item of remaining) {
-				expect(screen.getByText(item.name)).toBeInTheDocument();
-			}
-
-			await userEvent.click(mockResponsesTab());
-			for (const item of fixtureMockResponses) {
 				expect(screen.getByText(item.name)).toBeInTheDocument();
 			}
 		});
@@ -458,12 +361,6 @@ describe('Popup', () => {
 			expect(screen.getByText('New Mock')).toBeInTheDocument();
 			for (const item of fixtureMockResponses) {
 				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
-			}
-
-			// httpRules were absent from the imported file, so that list is untouched.
-			await userEvent.click(httpRulesTab());
-			for (const item of fixtureHttpRules) {
-				expect(screen.getByText(item.name)).toBeInTheDocument();
 			}
 		});
 

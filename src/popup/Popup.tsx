@@ -1,18 +1,14 @@
-import { Alert, Box, List, Paper, Snackbar, Typography, styled } from '@mui/material';
+import { Alert, Box, Snackbar, Typography, styled } from '@mui/material';
 import { useState } from 'react';
-import { openApp, type AppPage } from '../shared/chrome/openApp';
 import { buildExportFilename, downloadJson } from '../shared/files/downloadJson';
 import { readFileAsText } from '../shared/files/readFileAsText';
-import { formatHttpRuleSummary, formatMockResponseSummary } from '../shared/items/formatters';
 import { parseImportedItems, toExportPayload } from '../shared/items/transfer';
-import type { HttpRuleItem, MockResponseItem, PopupItem } from '../shared/items/types';
+import type { PopupItem } from '../shared/items/types';
 import { useItemsState } from '../shared/hooks/useItemsState';
-import { EmptyState } from './components/EmptyState';
 import { ImportDialog } from './components/ImportDialog';
-import { ItemRow, type ItemRowViewModel } from './components/ItemRow';
-import { PanelToolbar } from './components/PanelToolbar';
 import { PopupHeader } from './components/PopupHeader';
-import { PopupTabs, type PopupTabKey } from './components/PopupTabs';
+import { PopupPanel } from './components/PopupPanel';
+import type { PopupTabKey } from './components/PopupTabs';
 
 const PopupRoot = styled(Box)(({ theme }) => ({
 	width: 620,
@@ -23,72 +19,6 @@ const PopupRoot = styled(Box)(({ theme }) => ({
 	gap: theme.spacing(2),
 	backgroundColor: theme.palette.grey[50],
 }));
-
-const PopupCard = styled(Paper, {
-	shouldForwardProp: (prop) => prop !== 'dimmed',
-})<{ dimmed: boolean }>(({ theme, dimmed }) => ({
-	flex: 1,
-	minHeight: 0,
-	display: 'flex',
-	flexDirection: 'column',
-	padding: 16,
-	backgroundColor: dimmed ? theme.palette.grey[100] : theme.palette.background.paper,
-	borderColor: dimmed ? theme.palette.grey[300] : theme.palette.divider,
-}));
-
-interface TabConfig {
-	kind: PopupItem['kind'];
-	page: AppPage;
-	emptyHeadline: string;
-	emptyBody: string;
-	emptyActionLabel: string;
-}
-
-const TAB_CONFIG: Record<PopupTabKey, TabConfig> = {
-	'mock-responses': {
-		kind: 'mock-response',
-		page: 'mock-api',
-		emptyHeadline: 'No mock responses yet',
-		emptyBody: 'Add a mock response in the full app to get started.',
-		emptyActionLabel: 'Add mock response',
-	},
-	'http-rules': {
-		kind: 'http-rule',
-		page: 'http-rules',
-		emptyHeadline: 'No HTTP rules yet',
-		emptyBody: 'Add an HTTP rule in the full app to get started.',
-		emptyActionLabel: 'Add HTTP rule',
-	},
-};
-
-/**
- * Projects the active tab's items into the view model `ItemRow` renders.
- *
- * @param activeTab - Which tab is active, determining which list to project.
- * @param mockResponses - The full mock responses list.
- * @param httpRules - The full HTTP rules list.
- * @returns Row view models for the active tab's items.
- */
-const getItemRows = (
-	activeTab: PopupTabKey,
-	mockResponses: MockResponseItem[],
-	httpRules: HttpRuleItem[],
-): ItemRowViewModel[] => {
-	if (activeTab === 'mock-responses') {
-		return mockResponses.map((item) => ({
-			id: item.id,
-			label: item.name,
-			secondary: formatMockResponseSummary(item),
-			enabled: item.enabled,
-		}));
-	}
-	return httpRules.map((item) => ({
-		id: item.id,
-		label: item.name,
-		secondary: formatHttpRuleSummary(item),
-		enabled: item.enabled,
-	}));
-};
 
 interface ImportFeedback {
 	severity: 'success' | 'error';
@@ -115,9 +45,6 @@ export const Popup = () => {
 	const [importDialogOpen, setImportDialogOpen] = useState(false);
 	const [pastedText, setPastedText] = useState('');
 	const [feedback, setFeedback] = useState<ImportFeedback | null>(null);
-
-	const activeTabConfig = TAB_CONFIG[activeTab];
-	const itemRows = getItemRows(activeTab, mockResponses, httpRules);
 
 	/** Downloads every mock response and HTTP rule as one dated `.json` export file. */
 	const handleExport = () => {
@@ -168,36 +95,17 @@ export const Popup = () => {
 	return (
 		<PopupRoot>
 			<PopupHeader isRunning={isRunning} onRunningChange={setRunning} />
-			<PopupCard variant="outlined" dimmed={!isRunning}>
-				<PanelToolbar
-					page={activeTabConfig.page}
-					onExport={handleExport}
-					onImport={() => setImportDialogOpen(true)}
-				/>
-				<PopupTabs value={activeTab} onChange={setActiveTab} />
-				<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-					{itemRows.length === 0 ? (
-						<EmptyState
-							headline={activeTabConfig.emptyHeadline}
-							body={activeTabConfig.emptyBody}
-							actionLabel={activeTabConfig.emptyActionLabel}
-							onAction={() => openApp(activeTabConfig.page)}
-						/>
-					) : (
-						<List sx={{ padding: '0px' }}>
-							{itemRows.map((item) => (
-								<ItemRow
-									key={item.id}
-									item={item}
-									isRunning={isRunning}
-									onToggleEnabled={(id) => toggleItem(activeTabConfig.kind, id)}
-									onDelete={(id) => removeItem(activeTabConfig.kind, id)}
-								/>
-							))}
-						</List>
-					)}
-				</Box>
-			</PopupCard>
+			<PopupPanel
+				activeTab={activeTab}
+				onTabChange={setActiveTab}
+				isRunning={isRunning}
+				mockResponses={mockResponses}
+				httpRules={httpRules}
+				onExport={handleExport}
+				onImport={() => setImportDialogOpen(true)}
+				onToggleEnabled={toggleItem}
+				onDelete={removeItem}
+			/>
 			<Typography
 				variant="caption"
 				color="text.secondary"
