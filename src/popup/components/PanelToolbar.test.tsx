@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PanelToolbar } from './PanelToolbar';
-import { ItemsStateContext } from '../context/ItemsStateContext';
+import { ItemsStateContext } from '../../shared/context/ItemsStateContext';
 import type { UseItemsState } from '../../shared/hooks/useItemsState';
 import type { HttpRuleItem, MockResponseItem } from '../../shared/items/types';
 

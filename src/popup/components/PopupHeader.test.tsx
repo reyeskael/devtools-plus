@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PopupHeader } from './PopupHeader';
-import { ItemsStateContext } from '../context/ItemsStateContext';
+import { ItemsStateContext } from '../../shared/context/ItemsStateContext';
 import type { UseItemsState } from '../../shared/hooks/useItemsState';
 
 jest.mock('../../shared/chrome/openApp', () => ({

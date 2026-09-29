@@ -8,7 +8,7 @@ import {
 	validateMockResponseDraft,
 } from '../../shared/items/mockResponseDraft';
 import type { MockResponseDraft } from '../../shared/items/mockResponseDraft';
-import { useItemsState } from '../../shared/hooks/useItemsState';
+import { useItemsStateContext } from '../../shared/context/ItemsStateContext';
 import type { MockResponseItem } from '../../shared/items/types';
 
 interface MockEditorPageProps {
@@ -45,7 +45,7 @@ const draftFromItem = (item: MockResponseItem): MockResponseDraft => ({
  * after redirecting away from a stale id.
  */
 export const MockEditorPage = ({ id }: MockEditorPageProps) => {
-	const { mockResponses, hasHydrated, upsertMockResponse, removeItem } = useItemsState();
+	const { mockResponses, hasHydrated, upsertMockResponse, removeItem } = useItemsStateContext();
 	const [, setLocation] = useLocation();
 
 	const existingItem = id ? mockResponses.find((item) => item.id === id) : undefined;

@@ -4,6 +4,7 @@ import type { ChangeEvent } from 'react';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { MockEditorPage } from './MockEditorPage';
+import { ItemsStateProvider } from '../../shared/context/ItemsStateContext';
 import type { MockResponseItem } from '../../shared/items/types';
 
 jest.mock('../components/JsonEditor', () => ({
@@ -51,9 +52,11 @@ const seedStorage = (mockResponses: MockResponseItem[] = []) => {
 const renderEditor = (id?: string) => {
 	const { hook, history } = memoryLocation({ path: '/mock-api', record: true });
 	render(
-		<Router hook={hook}>
-			<MockEditorPage id={id} />
-		</Router>,
+		<ItemsStateProvider>
+			<Router hook={hook}>
+				<MockEditorPage id={id} />
+			</Router>
+		</ItemsStateProvider>,
 	);
 	return { history: history as string[] };
 };
@@ -176,9 +179,11 @@ describe('MockEditorPage', () => {
 				record: true,
 			});
 			render(
-				<Router hook={hook}>
-					<MockEditorPage id={existingItem.id} />
-				</Router>,
+				<ItemsStateProvider>
+					<Router hook={hook}>
+						<MockEditorPage id={existingItem.id} />
+					</Router>
+				</ItemsStateProvider>,
 			);
 
 			expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();

@@ -1,7 +1,7 @@
 import { Box, Button, Typography } from '@mui/material';
 import { openApp } from '../../shared/chrome/openApp';
 import { BrandSwitch } from '../../shared/components/BrandSwitch';
-import { useItemsStateContext } from '../context/ItemsStateContext';
+import { useItemsStateContext } from '../../shared/context/ItemsStateContext';
 
 /**
  * The popup's top bar: extension icon, master running switch, and a button to open the full app.

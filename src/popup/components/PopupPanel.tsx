@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { openApp, type AppPage } from '../../shared/chrome/openApp';
 import { formatHttpRuleSummary, formatMockResponseSummary } from '../../shared/items/formatters';
 import type { HttpRuleItem, MockResponseItem, PopupItem } from '../../shared/items/types';
-import { useItemsStateContext } from '../context/ItemsStateContext';
+import { useItemsStateContext } from '../../shared/context/ItemsStateContext';
 import { EmptyState } from './EmptyState';
 import { ItemRow, type ItemRowViewModel } from './ItemRow';
 import { PanelToolbar } from './PanelToolbar';

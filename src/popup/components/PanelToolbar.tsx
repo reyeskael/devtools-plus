@@ -8,7 +8,7 @@ import { buildExportFilename, downloadJson } from '../../shared/files/downloadJs
 import { readFileAsText } from '../../shared/files/readFileAsText';
 import { parseImportedItems, toExportPayload } from '../../shared/items/transfer';
 import type { PopupItem } from '../../shared/items/types';
-import { useItemsStateContext } from '../context/ItemsStateContext';
+import { useItemsStateContext } from '../../shared/context/ItemsStateContext';
 import { ImportDialog } from './ImportDialog';
 
 interface ImportFeedback {

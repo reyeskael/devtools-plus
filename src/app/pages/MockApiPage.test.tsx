@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Router } from 'wouter';
 import { memoryLocation } from 'wouter/memory-location';
 import { MockApiPage } from './MockApiPage';
+import { ItemsStateProvider } from '../../shared/context/ItemsStateContext';
 import type { MockResponseItem } from '../../shared/items/types';
 
 const STORAGE_KEY = 'popupItemsState';
@@ -33,9 +34,11 @@ const fixtureMockResponses: MockResponseItem[] = [
 const renderAtPath = (path: string) => {
 	const { hook, history } = memoryLocation({ path, record: true });
 	render(
-		<Router hook={hook}>
-			<MockApiPage />
-		</Router>,
+		<ItemsStateProvider>
+			<Router hook={hook}>
+				<MockApiPage />
+			</Router>
+		</ItemsStateProvider>,
 	);
 	return { history: history as string[] };
 };

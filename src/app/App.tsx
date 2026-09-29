@@ -1,6 +1,7 @@
 import { Redirect, Route, Router, Switch } from 'wouter';
 import type { BaseLocationHook } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
+import { ItemsStateProvider } from '../shared/context/ItemsStateContext';
 import { HttpRulesPlaceholder } from './RoutePlaceholders';
 import { MockApiPage } from './pages/MockApiPage';
 import { MockEditorPage } from './pages/MockEditorPage';
@@ -22,19 +23,21 @@ interface AppRoutesProps {
  * @returns The routed page content.
  */
 export const AppRoutes = ({ hook = useHashLocation }: AppRoutesProps = {}) => (
-	<Router hook={hook}>
-		<Switch>
-			<Route path="/mock-api" component={MockApiPage} />
-			<Route path="/mock-api/new">
-				<MockEditorPage />
-			</Route>
-			<Route path="/mock-api/:id">{(params) => <MockEditorPage id={params.id} />}</Route>
-			<Route path="/http-rules" component={HttpRulesPlaceholder} />
-			<Route>
-				<Redirect to="/mock-api" />
-			</Route>
-		</Switch>
-	</Router>
+	<ItemsStateProvider>
+		<Router hook={hook}>
+			<Switch>
+				<Route path="/mock-api" component={MockApiPage} />
+				<Route path="/mock-api/new">
+					<MockEditorPage />
+				</Route>
+				<Route path="/mock-api/:id">{(params) => <MockEditorPage id={params.id} />}</Route>
+				<Route path="/http-rules" component={HttpRulesPlaceholder} />
+				<Route>
+					<Redirect to="/mock-api" />
+				</Route>
+			</Switch>
+		</Router>
+	</ItemsStateProvider>
 );
 
 /**

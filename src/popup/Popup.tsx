@@ -1,5 +1,5 @@
 import { Box, Typography, styled } from '@mui/material';
-import { ItemsStateProvider } from './context/ItemsStateContext';
+import { ItemsStateProvider } from '../shared/context/ItemsStateContext';
 import { PopupHeader } from './components/PopupHeader';
 import { PopupPanel } from './components/PopupPanel';
 

@@ -1,7 +1,7 @@
 import { Alert, Box, Button, Container, List, Snackbar, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
-import { useItemsState } from '../../shared/hooks/useItemsState';
+import { useItemsStateContext } from '../../shared/context/ItemsStateContext';
 import { MockApiRow } from './MockApiRow';
 
 interface SaveFeedback {
@@ -18,7 +18,7 @@ interface SaveFeedback {
  * @returns The Mock APIs list page UI.
  */
 export const MockApiPage = () => {
-	const { mockResponses, toggleItem, removeItem } = useItemsState();
+	const { mockResponses, toggleItem, removeItem } = useItemsStateContext();
 	const [, setLocation] = useLocation();
 	const search = useSearch();
 	const [feedback, setFeedback] = useState<SaveFeedback | null>(null);

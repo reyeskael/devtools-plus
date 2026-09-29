@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import { useItemsState, type UseItemsState } from '../../shared/hooks/useItemsState';
+import { useItemsState, type UseItemsState } from '../hooks/useItemsState';
 
 /**
  * Exported (rather than kept module-private) so tests can render a component tree against a
@@ -10,10 +10,10 @@ export const ItemsStateContext = createContext<UseItemsState | null>(null);
 
 /**
  * Hydrates {@link useItemsState} once and shares it with every descendant via context, so the
- * popup's components can read/mutate items state directly instead of having it threaded down
- * through props.
+ * popup and app trees can read/mutate items state directly instead of having it threaded down
+ * through props (or, for the app's route pages, re-hydrated from scratch on every navigation).
  *
- * @param props.children - The popup tree that should share this single items-state instance.
+ * @param props.children - The tree that should share this single items-state instance.
  * @returns A provider wrapping `children`.
  */
 export const ItemsStateProvider = ({ children }: { children: ReactNode }) => {
