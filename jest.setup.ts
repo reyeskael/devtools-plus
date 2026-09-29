@@ -2,6 +2,13 @@ import '@testing-library/jest-dom';
 
 const storageData: Record<string, unknown> = {};
 
+type StorageListener = (
+	changes: Record<string, chrome.storage.StorageChange>,
+	areaName: chrome.storage.AreaName,
+) => void;
+
+const onChangedListeners = new Set<StorageListener>();
+
 (globalThis as unknown as { chrome: typeof chrome }).chrome = {
 	tabs: {
 		create: jest.fn(),
@@ -25,13 +32,24 @@ const storageData: Record<string, unknown> = {};
 				callback({ [key]: storageData[key] });
 			}),
 			set: jest.fn((items: Record<string, unknown>, callback?: () => void) => {
+				const changes: Record<string, chrome.storage.StorageChange> = {};
+				for (const key of Object.keys(items)) {
+					changes[key] = { oldValue: storageData[key], newValue: items[key] };
+				}
 				Object.assign(storageData, items);
+				for (const listener of [...onChangedListeners]) {
+					listener(changes, 'local');
+				}
 				callback?.();
 			}),
 		},
 		onChanged: {
-			addListener: jest.fn(),
-			removeListener: jest.fn(),
+			addListener: jest.fn((listener: StorageListener) => {
+				onChangedListeners.add(listener);
+			}),
+			removeListener: jest.fn((listener: StorageListener) => {
+				onChangedListeners.delete(listener);
+			}),
 		},
 	},
 	action: {
@@ -45,4 +63,5 @@ beforeEach(() => {
 	for (const key of Object.keys(storageData)) {
 		delete storageData[key];
 	}
+	onChangedListeners.clear();
 });

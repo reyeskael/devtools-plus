@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PopupHeader } from './PopupHeader';
-import { ItemsStateContext } from '../../shared/context/ItemsStateContext';
-import type { UseItemsState } from '../../shared/hooks/useItemsState';
+import {
+	ItemsStateContext,
+	type ItemsStateContextValue,
+} from '../../shared/context/ItemsStateContext';
 
 jest.mock('../../shared/chrome/openApp', () => ({
 	openApp: jest.fn(),
@@ -10,7 +12,9 @@ jest.mock('../../shared/chrome/openApp', () => ({
 
 import { openApp } from '../../shared/chrome/openApp';
 
-const buildItemsState = (overrides: Partial<UseItemsState> = {}): UseItemsState => ({
+const buildItemsState = (
+	overrides: Partial<ItemsStateContextValue> = {},
+): ItemsStateContextValue => ({
 	mockResponses: [],
 	httpRules: [],
 	isRunning: false,
@@ -23,7 +27,7 @@ const buildItemsState = (overrides: Partial<UseItemsState> = {}): UseItemsState 
 	...overrides,
 });
 
-const renderHeader = (overrides: Partial<UseItemsState> = {}) => {
+const renderHeader = (overrides: Partial<ItemsStateContextValue> = {}) => {
 	const itemsState = buildItemsState(overrides);
 	render(
 		<ItemsStateContext.Provider value={itemsState}>

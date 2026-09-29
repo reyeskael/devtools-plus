@@ -1,8 +1,10 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PanelToolbar } from './PanelToolbar';
-import { ItemsStateContext } from '../../shared/context/ItemsStateContext';
-import type { UseItemsState } from '../../shared/hooks/useItemsState';
+import {
+	ItemsStateContext,
+	type ItemsStateContextValue,
+} from '../../shared/context/ItemsStateContext';
 import type { HttpRuleItem, MockResponseItem } from '../../shared/items/types';
 
 jest.mock('../../shared/chrome/openApp', () => ({
@@ -43,7 +45,9 @@ interface RenderOverrides {
 	replaceItems?: jest.Mock;
 }
 
-const buildItemsState = (overrides: Partial<UseItemsState> = {}): UseItemsState => ({
+const buildItemsState = (
+	overrides: Partial<ItemsStateContextValue> = {},
+): ItemsStateContextValue => ({
 	mockResponses: [mockResponse],
 	httpRules: [httpRule],
 	isRunning: true,

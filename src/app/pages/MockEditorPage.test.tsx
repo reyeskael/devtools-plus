@@ -165,7 +165,7 @@ describe('MockEditorPage', () => {
 			seedStorage([existingItem]);
 			// Real chrome.storage.local.get is an async browser call; jest.setup.ts's stub invokes
 			// its callback synchronously, which is what hid this bug. Deferring the callback by a
-			// macrotask here reproduces the genuine race between useItemsState's hydration and
+			// macrotask here reproduces the genuine race between useItemsStateContext's hydration and
 			// MockEditorPage's "not found" check.
 			const originalGet = (chrome.storage.local.get as jest.Mock).getMockImplementation();
 			(chrome.storage.local.get as jest.Mock).mockImplementationOnce(

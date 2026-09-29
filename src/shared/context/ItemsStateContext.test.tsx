@@ -1,6 +1,6 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { seedHttpRules } from '../items/seedItems';
-import { useItemsState } from './useItemsState';
+import { ItemsStateProvider, useItemsStateContext } from './ItemsStateContext';
 import type { HttpRuleItem, MockResponseItem } from '../items/types';
 
 const STORAGE_KEY = 'popupItemsState';
@@ -71,9 +71,12 @@ const seedStorage = (overrides: StoredOverrides = {}) => {
 	});
 };
 
-describe('useItemsState', () => {
+const renderItemsState = () =>
+	renderHook(() => useItemsStateContext(), { wrapper: ItemsStateProvider });
+
+describe('ItemsStateContext', () => {
 	it('starts running with the real in-memory defaults before any storage exists', () => {
-		const { result } = renderHook(() => useItemsState());
+		const { result } = renderItemsState();
 
 		expect(result.current.isRunning).toBe(true);
 		expect(result.current.mockResponses).toEqual([]);
@@ -92,7 +95,7 @@ describe('useItemsState', () => {
 			},
 		);
 
-		const { result } = renderHook(() => useItemsState());
+		const { result } = renderItemsState();
 
 		expect(result.current.hasHydrated).toBe(false);
 
@@ -103,17 +106,19 @@ describe('useItemsState', () => {
 
 	it('item data is JSON-serializable', () => {
 		seedStorage();
-		const { result } = renderHook(() => useItemsState());
+		const { result } = renderItemsState();
 
 		expect(JSON.parse(JSON.stringify(result.current.mockResponses))).toEqual(
 			result.current.mockResponses,
 		);
-		expect(JSON.parse(JSON.stringify(result.current.httpRules))).toEqual(result.current.httpRules);
+		expect(JSON.parse(JSON.stringify(result.current.httpRules))).toEqual(
+			result.current.httpRules,
+		);
 	});
 
 	it("toggleItem('mock-response', id) flips only the targeted mock response's enabled flag", () => {
 		seedStorage();
-		const { result } = renderHook(() => useItemsState());
+		const { result } = renderItemsState();
 		const [first, second] = result.current.mockResponses;
 		const httpRulesBefore = result.current.httpRules;
 
@@ -132,7 +137,7 @@ describe('useItemsState', () => {
 
 	it("toggleItem('http-rule', id) flips only the targeted http rule's enabled flag", () => {
 		seedStorage();
-		const { result } = renderHook(() => useItemsState());
+		const { result } = renderItemsState();
 		const [first, second] = result.current.httpRules;
 		const mockResponsesBefore = result.current.mockResponses;
 
@@ -151,7 +156,7 @@ describe('useItemsState', () => {
 
 	it("removeItem('mock-response', id) removes only that item from mockResponses", () => {
 		seedStorage();
-		const { result } = renderHook(() => useItemsState());
+		const { result } = renderItemsState();
 		const [first] = result.current.mockResponses;
 		const httpRulesBefore = result.current.httpRules;
 
@@ -166,7 +171,7 @@ describe('useItemsState', () => {
 
 	it("removeItem('http-rule', id) removes only that item from httpRules", () => {
 		seedStorage();
-		const { result } = renderHook(() => useItemsState());
+		const { result } = renderItemsState();
 		const [first] = result.current.httpRules;
 		const mockResponsesBefore = result.current.mockResponses;
 
@@ -180,7 +185,7 @@ describe('useItemsState', () => {
 	});
 
 	it('setRunning updates isRunning', () => {
-		const { result } = renderHook(() => useItemsState());
+		const { result } = renderItemsState();
 
 		act(() => {
 			result.current.setRunning(false);
@@ -192,7 +197,7 @@ describe('useItemsState', () => {
 	describe('replaceItems', () => {
 		it('replacing only mockResponses leaves httpRules untouched', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 			const httpRulesBefore = result.current.httpRules;
 			const nextMockResponses: MockResponseItem[] = [
 				{
@@ -216,7 +221,7 @@ describe('useItemsState', () => {
 
 		it('replacing only httpRules leaves mockResponses untouched', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 			const mockResponsesBefore = result.current.mockResponses;
 			const nextHttpRules: HttpRuleItem[] = [
 				{
@@ -239,7 +244,7 @@ describe('useItemsState', () => {
 
 		it('replaces both mockResponses and httpRules at once', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 			const nextMockResponses: MockResponseItem[] = [
 				{
 					id: 'imported-2',
@@ -273,7 +278,7 @@ describe('useItemsState', () => {
 
 		it('passing undefined for both arguments leaves both lists exactly as they were', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 			const mockResponsesBefore = result.current.mockResponses;
 			const httpRulesBefore = result.current.httpRules;
 
@@ -287,7 +292,7 @@ describe('useItemsState', () => {
 
 		it('persists a replaceItems call to chrome.storage.local after hydration', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 			const nextMockResponses: MockResponseItem[] = [
 				{
 					id: 'imported-3',
@@ -317,7 +322,7 @@ describe('useItemsState', () => {
 	describe('upsertMockResponse', () => {
 		it('appends a new item (id not present) to the end, leaving existing items and httpRules untouched', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 			const httpRulesBefore = result.current.httpRules;
 			const newItem: MockResponseItem = {
 				id: 'mr-3',
@@ -343,7 +348,7 @@ describe('useItemsState', () => {
 
 		it('replaces an existing item (matching id) in place, keeping the same length and position', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 			const updatedItem: MockResponseItem = {
 				...fixtureMockResponses[0],
 				name: 'Get users (updated)',
@@ -361,7 +366,7 @@ describe('useItemsState', () => {
 
 		it('persists an upsertMockResponse call to chrome.storage.local after hydration', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 			const newItem: MockResponseItem = {
 				id: 'mr-3',
 				name: 'Delete user',
@@ -386,11 +391,11 @@ describe('useItemsState', () => {
 		});
 	});
 
-	describe('external chrome.storage.onChanged', () => {
-		it('applies a genuinely external change (one this instance never wrote) to mockResponses, httpRules, and isRunning', () => {
+	describe('external chrome.storage.onChanged (cross-instance)', () => {
+		it('applies a genuinely external change (written by a second, independently mounted instance) to mockResponses, httpRules, and isRunning', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
-			const listener = (chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
+			const instanceA = renderItemsState();
+			const instanceB = renderItemsState();
 			const externalMockResponses: MockResponseItem[] = [
 				{
 					id: 'external-1',
@@ -413,35 +418,25 @@ describe('useItemsState', () => {
 				},
 			];
 
+			// Two separate act() calls so instanceA's closure has already re-rendered with the
+			// replaceItems result before setRunning reads mockResponses/httpRules off it — otherwise
+			// setRunning would persist the stale pre-replaceItems lists.
 			act(() => {
-				listener(
-					{
-						[STORAGE_KEY]: {
-							newValue: {
-								mockResponses: externalMockResponses,
-								httpRules: externalHttpRules,
-								isRunning: false,
-							},
-							oldValue: {
-								mockResponses: fixtureMockResponses,
-								httpRules: fixtureHttpRules,
-								isRunning: true,
-							},
-						},
-					},
-					'local',
-				);
+				instanceA.result.current.replaceItems(externalMockResponses, externalHttpRules);
+			});
+			act(() => {
+				instanceA.result.current.setRunning(false);
 			});
 
-			expect(result.current.mockResponses).toEqual(externalMockResponses);
-			expect(result.current.httpRules).toEqual(externalHttpRules);
-			expect(result.current.isRunning).toBe(false);
+			expect(instanceB.result.current.mockResponses).toEqual(externalMockResponses);
+			expect(instanceB.result.current.httpRules).toEqual(externalHttpRules);
+			expect(instanceB.result.current.isRunning).toBe(false);
 		});
 
 		it("does not re-persist to chrome.storage.local when the incoming change matches this instance's own last write (loop guard)", () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
-			const listener = (chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
+			const instanceA = renderItemsState();
+			renderItemsState();
 			const newItem: MockResponseItem = {
 				id: 'mr-3',
 				name: 'Delete user',
@@ -452,19 +447,88 @@ describe('useItemsState', () => {
 				statusCode: 204,
 			};
 
+			const setMock = chrome.storage.local.set as jest.Mock;
+			const setCallCountBefore = setMock.mock.calls.length;
+
 			act(() => {
-				result.current.upsertMockResponse(newItem);
+				instanceA.result.current.upsertMockResponse(newItem);
 			});
 
-			const setMock = chrome.storage.local.set as jest.Mock;
-			const lastWrittenPayload = setMock.mock.calls[setMock.mock.calls.length - 1][0][STORAGE_KEY];
-			const setCallCountBefore = setMock.mock.calls.length;
+			// instanceA's own mutation writes to storage exactly once — receiving its own
+			// dispatched onChanged event back (it's also a registered listener) must not cause
+			// it to re-persist and loop.
+			expect(setMock.mock.calls.length).toBe(setCallCountBefore + 1);
+		});
+	});
+
+	describe('onChanged listener defensive branches', () => {
+		it('ignores changes from areas other than "local"', () => {
+			seedStorage();
+			const { result } = renderItemsState();
+			const listener = (chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
+			const mockResponsesBefore = result.current.mockResponses;
+			const httpRulesBefore = result.current.httpRules;
+			const isRunningBefore = result.current.isRunning;
 
 			act(() => {
 				listener(
 					{
 						[STORAGE_KEY]: {
-							newValue: lastWrittenPayload,
+							newValue: {
+								mockResponses: [],
+								httpRules: [],
+								isRunning: false,
+							},
+							oldValue: undefined,
+						},
+					},
+					'sync',
+				);
+			});
+
+			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
+			expect(result.current.httpRules).toEqual(httpRulesBefore);
+			expect(result.current.isRunning).toBe(isRunningBefore);
+		});
+
+		it('ignores a changes object that does not include the storage key', () => {
+			seedStorage();
+			const { result } = renderItemsState();
+			const listener = (chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
+			const mockResponsesBefore = result.current.mockResponses;
+			const httpRulesBefore = result.current.httpRules;
+			const isRunningBefore = result.current.isRunning;
+
+			act(() => {
+				listener(
+					{
+						someOtherKey: {
+							newValue: 'irrelevant',
+							oldValue: undefined,
+						},
+					},
+					'local',
+				);
+			});
+
+			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
+			expect(result.current.httpRules).toEqual(httpRulesBefore);
+			expect(result.current.isRunning).toBe(isRunningBefore);
+		});
+
+		it('ignores a change whose newValue is undefined', () => {
+			seedStorage();
+			const { result } = renderItemsState();
+			const listener = (chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
+			const mockResponsesBefore = result.current.mockResponses;
+			const httpRulesBefore = result.current.httpRules;
+			const isRunningBefore = result.current.isRunning;
+
+			act(() => {
+				listener(
+					{
+						[STORAGE_KEY]: {
+							newValue: undefined,
 							oldValue: {
 								mockResponses: fixtureMockResponses,
 								httpRules: fixtureHttpRules,
@@ -476,16 +540,21 @@ describe('useItemsState', () => {
 				);
 			});
 
-			expect(setMock.mock.calls.length).toBe(setCallCountBefore);
+			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
+			expect(result.current.httpRules).toEqual(httpRulesBefore);
+			expect(result.current.isRunning).toBe(isRunningBefore);
 		});
 	});
 
 	describe('persistence', () => {
 		it('keeps the default mock responses, http rules, and isRunning once hydration settles on empty storage', async () => {
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 
 			await waitFor(() => {
-				expect(chrome.storage.local.get).toHaveBeenCalledWith(STORAGE_KEY, expect.any(Function));
+				expect(chrome.storage.local.get).toHaveBeenCalledWith(
+					STORAGE_KEY,
+					expect.any(Function),
+				);
 			});
 
 			expect(result.current.isRunning).toBe(true);
@@ -506,7 +575,7 @@ describe('useItemsState', () => {
 				isRunning: false,
 			});
 
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 
 			await waitFor(() => {
 				expect(result.current.isRunning).toBe(false);
@@ -540,7 +609,7 @@ describe('useItemsState', () => {
 				isRunning: false,
 			});
 
-			renderHook(() => useItemsState());
+			renderItemsState();
 
 			let stored: unknown;
 			chrome.storage.local.get(STORAGE_KEY, (result) => {
@@ -556,7 +625,7 @@ describe('useItemsState', () => {
 
 		it('persists mock-response toggles to chrome.storage.local after hydration', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 
 			act(() => {
 				result.current.toggleItem('mock-response', fixtureMockResponses[0].id);
@@ -573,7 +642,7 @@ describe('useItemsState', () => {
 
 		it('persists http-rule toggles to chrome.storage.local after hydration', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 
 			act(() => {
 				result.current.toggleItem('http-rule', fixtureHttpRules[1].id);
@@ -590,7 +659,7 @@ describe('useItemsState', () => {
 
 		it('persists removeItem changes to chrome.storage.local after hydration', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 
 			act(() => {
 				result.current.removeItem('mock-response', fixtureMockResponses[0].id);
@@ -607,7 +676,7 @@ describe('useItemsState', () => {
 
 		it('persists setRunning changes to chrome.storage.local after hydration', () => {
 			seedStorage();
-			const { result } = renderHook(() => useItemsState());
+			const { result } = renderItemsState();
 
 			act(() => {
 				result.current.setRunning(false);
@@ -620,6 +689,57 @@ describe('useItemsState', () => {
 					isRunning: false,
 				},
 			});
+		});
+	});
+
+	describe('useItemsStateContext outside a provider', () => {
+		it('throws when called outside an ItemsStateProvider', () => {
+			const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+			try {
+				expect(() => renderHook(() => useItemsStateContext())).toThrow(
+					'useItemsStateContext must be used within an ItemsStateProvider',
+				);
+			} finally {
+				consoleErrorSpy.mockRestore();
+			}
+		});
+	});
+
+	describe('multiple consumers under one provider', () => {
+		const ConsumerA = () => {
+			const { mockResponses, toggleItem } = useItemsStateContext();
+			return (
+				<button onClick={() => toggleItem('mock-response', mockResponses[0]?.id ?? '')}>
+					toggle-from-a
+				</button>
+			);
+		};
+
+		const ConsumerB = () => {
+			const { mockResponses } = useItemsStateContext();
+			return <div data-testid="consumer-b-enabled">{String(mockResponses[0]?.enabled)}</div>;
+		};
+
+		it('share the same items-state instance — a mutation from one consumer is observed by the other', () => {
+			seedStorage();
+
+			render(
+				<ItemsStateProvider>
+					<ConsumerA />
+					<ConsumerB />
+				</ItemsStateProvider>,
+			);
+
+			expect(screen.getByTestId('consumer-b-enabled').textContent).toBe(
+				String(fixtureMockResponses[0].enabled),
+			);
+
+			fireEvent.click(screen.getByText('toggle-from-a'));
+
+			expect(screen.getByTestId('consumer-b-enabled').textContent).toBe(
+				String(!fixtureMockResponses[0].enabled),
+			);
 		});
 	});
 });

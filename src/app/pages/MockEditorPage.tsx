@@ -41,7 +41,7 @@ const draftFromItem = (item: MockResponseItem): MockResponseDraft => ({
  * by parsing the route itself.
  *
  * @param props.id - The mock response's id in edit mode; omitted in create mode.
- * @returns The editor UI, or nothing while the initial `useItemsState` hydration is pending or
+ * @returns The editor UI, or nothing while the initial `useItemsStateContext` hydration is pending or
  * after redirecting away from a stale id.
  */
 export const MockEditorPage = ({ id }: MockEditorPageProps) => {

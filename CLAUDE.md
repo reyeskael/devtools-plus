@@ -38,14 +38,14 @@ A Husky `pre-push` hook (`.husky/pre-push`) runs `yarn test` before every push a
 A main-world script has no access to `chrome.*` APIs, and a content script in the isolated world cannot patch the page's globals (`fetch`, `XMLHttpRequest`). The extension is split into three pieces connected by a one-way data flow, all triggered by `chrome.storage.onChanged` — there is no message passing through the background service worker, so nothing races the MV3 service worker lifecycle:
 
 ```
-popup (useItemsState)
+popup (ItemsStateContext)
   └─ chrome.storage.local['popupItemsState']
        └─ bridge — isolated content script, chrome.storage.onChanged
             └─ window.postMessage
                  └─ interceptor — MAIN world, patches fetch + XHR
 ```
 
-1. **Popup** (`src/shared/hooks/useItemsState.ts`) owns `{ mockResponses, httpRules, isRunning }` and persists the whole blob to `chrome.storage.local` on every change.
+1. **Popup** (`src/shared/context/ItemsStateContext.tsx`) owns `{ mockResponses, httpRules, isRunning }` and persists the whole blob to `chrome.storage.local` on every change.
 2. **Bridge** (`src/content/bridge/`) reads that key on load and subscribes to `chrome.storage.onChanged`, posting a rule snapshot into the page on each change.
 3. **Interceptor** (`src/content/interceptor/`) replaces `window.fetch` and patches `XMLHttpRequest`, keeping the latest snapshot in a **rule gate** (`ruleGate.ts`).
 
@@ -72,7 +72,7 @@ src/
     mocks/                    Matching + response construction
     messaging/                Cross-world message types and validation
     storage/                  Storage key (kept dependency-free on purpose)
-    hooks/                    useItemsState
+    context/                  ItemsStateContext — items state as a React Context
     chrome/                   openApp helper
     theme.tsx                 MUI theme + provider
 ```
