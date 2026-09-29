@@ -64,7 +64,7 @@ export const MockResponseForm = ({
 	};
 
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+		<Box sx={{ display: 'flex', flexDirection: 'column' }}>
 			<EditorTopBar
 				breadcrumbLabel={breadcrumbLabel}
 				onBreadcrumbBack={onBreadcrumbBack}
