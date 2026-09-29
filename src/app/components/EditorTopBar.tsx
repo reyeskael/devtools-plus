@@ -1,7 +1,8 @@
-import { Box, Breadcrumbs, Button, IconButton, Link, Menu, Switch, Typography } from '@mui/material';
+import { Box, Breadcrumbs, Button, IconButton, Link, Menu, Typography } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { BrandSwitch } from '../../shared/components/BrandSwitch';
 
 interface EditorTopBarProps {
 	breadcrumbLabel: string;
@@ -14,7 +15,7 @@ interface EditorTopBarProps {
 
 /**
  * The mock response editor's top bar: a "Mock APIs > {breadcrumbLabel}" breadcrumb, an enabled
- * `Switch`, an optional overflow menu, and a Save button.
+ * `BrandSwitch`, an optional overflow menu, and a Save button.
  *
  * @param props.breadcrumbLabel - The current mode/item label, e.g. "New mock" or the item's name.
  * @param props.onBreadcrumbBack - Called when the "Mock APIs" breadcrumb segment is clicked.
@@ -50,7 +51,7 @@ export const EditorTopBar = ({
 				<Typography color="text.primary">{breadcrumbLabel}</Typography>
 			</Breadcrumbs>
 			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-				<Switch
+				<BrandSwitch
 					checked={enabled}
 					onChange={(event) => onEnabledChange(event.target.checked)}
 					slotProps={{ input: { 'aria-label': 'Enabled' } }}

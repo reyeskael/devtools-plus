@@ -87,9 +87,6 @@ export const MockResponseForm = ({
 			/>
 
 			<Box>
-				<Typography variant="subtitle1" gutterBottom>
-					If request
-				</Typography>
 				<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
 					<Typography sx={{ pt: 2 }}>URL</Typography>
 					<Tooltip title="Matches when the request URL contains this text as a plain substring — not a glob or regex pattern.">
@@ -105,7 +102,7 @@ export const MockResponseForm = ({
 						}
 						fullWidth
 					/>
-					<FormControl error={Boolean(errors.method)}>
+					<FormControl error={Boolean(errors.method)} sx={{ minWidth: 130 }}>
 						<Select
 							value={draft.method}
 							aria-label="Method"

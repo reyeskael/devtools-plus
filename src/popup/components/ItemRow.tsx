@@ -1,5 +1,6 @@
-import { IconButton, ListItem, ListItemText, Switch } from '@mui/material';
+import { IconButton, ListItem, ListItemText } from '@mui/material';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import { BrandSwitch } from '../../shared/components/BrandSwitch';
 
 export interface ItemRowViewModel {
 	id: string;
@@ -35,7 +36,7 @@ export const ItemRow = ({ item, isRunning, onToggleEnabled, onDelete }: ItemRowP
 			<IconButton disabled={!isRunning} onClick={() => onDelete(item.id)} aria-label={deleteLabel}>
 				<DeleteOutlinedIcon />
 			</IconButton>
-			<Switch
+			<BrandSwitch
 				checked={item.enabled}
 				disabled={!isRunning}
 				onChange={() => onToggleEnabled(item.id)}

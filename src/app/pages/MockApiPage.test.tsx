@@ -124,4 +124,27 @@ describe('MockApiPage', () => {
 		expect(history.at(-1)).toBe(`/mock-api/${fixtureMockResponses[1].id}`);
 		expect(history.at(-1)).not.toBe(`/mock-api/${fixtureMockResponses[0].id}`);
 	});
+
+	it('toggles a row\'s enabled state via its switch without navigating', async () => {
+		chrome.storage.local.set({
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+		});
+		const { history } = renderAtPath('/mock-api');
+		const toggle = screen.getByRole('switch', { name: `${fixtureMockResponses[1].name} switch` });
+		expect(toggle).not.toBeChecked();
+		await userEvent.click(toggle);
+		expect(toggle).toBeChecked();
+		expect(history.at(-1)).toBe('/mock-api');
+	});
+
+	it('removes a row when its delete button is clicked, without navigating', async () => {
+		chrome.storage.local.set({
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+		});
+		const { history } = renderAtPath('/mock-api');
+		await userEvent.click(screen.getByRole('button', { name: `Delete ${fixtureMockResponses[0].name}` }));
+		expect(screen.queryByText(fixtureMockResponses[0].name)).not.toBeInTheDocument();
+		expect(screen.getByText(fixtureMockResponses[1].name)).toBeInTheDocument();
+		expect(history.at(-1)).toBe('/mock-api');
+	});
 });

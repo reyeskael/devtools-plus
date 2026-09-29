@@ -1,4 +1,4 @@
-import { Box, MenuItem } from '@mui/material';
+import { Container, MenuItem } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { MockResponseForm } from '../components/MockResponseForm';
@@ -111,7 +111,7 @@ export const MockEditorPage = ({ id }: MockEditorPageProps) => {
 	const breadcrumbLabel = id ? draft.name.trim() || 'Edit mock' : 'New mock';
 
 	return (
-		<Box sx={{ p: 4 }}>
+		<Container maxWidth="lg" sx={{ py: 4 }}>
 			<MockResponseForm
 				draft={draft}
 				onDraftChange={setDraft}
@@ -121,6 +121,6 @@ export const MockEditorPage = ({ id }: MockEditorPageProps) => {
 				onSave={handleSave}
 				overflowMenuItems={id ? <MenuItem onClick={handleDelete}>Delete</MenuItem> : undefined}
 			/>
-		</Box>
+		</Container>
 	);
 };

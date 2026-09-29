@@ -1,5 +1,6 @@
-import { Box, Button, Switch, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import { openApp } from '../../shared/chrome/openApp';
+import { BrandSwitch } from '../../shared/components/BrandSwitch';
 
 interface PopupHeaderProps {
 	isRunning: boolean;
@@ -24,19 +25,21 @@ export const PopupHeader = ({ isRunning, onRunningChange }: PopupHeaderProps) =>
 				width={32}
 				height={32}
 			/>
-			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-				<Switch
-					checked={isRunning}
-					onChange={(event) => onRunningChange(event.target.checked)}
-					slotProps={{ input: { 'aria-label': 'Master switch' } }}
-				/>
-				<Typography variant="body2" color="text.secondary">
-					{statusLabel}
-				</Typography>
+			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+					<BrandSwitch
+						checked={isRunning}
+						onChange={(event) => onRunningChange(event.target.checked)}
+						slotProps={{ input: { 'aria-label': 'Master switch' } }}
+					/>
+					<Typography variant="caption" color="text.secondary">
+						{statusLabel}
+					</Typography>
+				</Box>
+				<Button variant="contained" size="small" onClick={() => openApp()}>
+					Open App
+				</Button>
 			</Box>
-			<Button variant="contained" onClick={() => openApp()}>
-				Open App
-			</Button>
 		</Box>
 	);
 };

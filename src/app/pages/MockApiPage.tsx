@@ -1,4 +1,4 @@
-import { Alert, Box, Button, List, Snackbar, Typography } from '@mui/material';
+import { Alert, Box, Button, Container, List, Snackbar, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { useItemsState } from '../../shared/hooks/useItemsState';
@@ -18,7 +18,7 @@ interface SaveFeedback {
  * @returns The Mock APIs list page UI.
  */
 export const MockApiPage = () => {
-	const { mockResponses } = useItemsState();
+	const { mockResponses, toggleItem, removeItem } = useItemsState();
 	const [, setLocation] = useLocation();
 	const search = useSearch();
 	const [feedback, setFeedback] = useState<SaveFeedback | null>(null);
@@ -39,7 +39,7 @@ export const MockApiPage = () => {
 	}, [search, setLocation]);
 
 	return (
-		<Box sx={{ p: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+		<Container maxWidth="lg" sx={{ py: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
 			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 				<Typography variant="h5">Mock APIs</Typography>
 				<Button variant="contained" onClick={() => setLocation('/mock-api/new')}>
@@ -58,6 +58,8 @@ export const MockApiPage = () => {
 							key={item.id}
 							item={item}
 							onEdit={(id) => setLocation(`/mock-api/${id}`)}
+							onToggle={(id) => toggleItem('mock-response', id)}
+							onDelete={(id) => removeItem('mock-response', id)}
 						/>
 					))}
 				</List>
@@ -75,6 +77,6 @@ export const MockApiPage = () => {
 					</Alert>
 				) : undefined}
 			</Snackbar>
-		</Box>
+		</Container>
 	);
 };
