@@ -31,17 +31,17 @@ export const ItemRow = ({ item, isRunning, onToggleEnabled, onDelete }: ItemRowP
 	const switchLabel = `${item.label} switch`;
 
 	return (
-		<ListItem sx={{ opacity: isRunning ? 1 : 0.5 }}>
-			<ListItemText primary={item.label} secondary={item.secondary} />
-			<IconButton disabled={!isRunning} onClick={() => onDelete(item.id)} aria-label={deleteLabel}>
-				<DeleteOutlinedIcon />
-			</IconButton>
+		<ListItem divider sx={{ opacity: isRunning ? 1 : 0.5, padding: '8px 0px' }}>
+			<ListItemText primary={item.label} secondary={item.secondary} sx={{ margin: '0px' }} />
 			<BrandSwitch
 				checked={item.enabled}
 				disabled={!isRunning}
 				onChange={() => onToggleEnabled(item.id)}
 				slotProps={{ input: { 'aria-label': switchLabel } }}
 			/>
+			<IconButton disabled={!isRunning} onClick={() => onDelete(item.id)} aria-label={deleteLabel}>
+				<DeleteOutlinedIcon />
+			</IconButton>
 		</ListItem>
 	);
 };

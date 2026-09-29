@@ -23,7 +23,14 @@ export const PopupTabs = ({ value, onChange }: PopupTabsProps) => (
 			value="mock-responses"
 			icon={<ApiOutlinedIcon />}
 			iconPosition="start"
+			sx={{ minHeight: 0 }}
 		/>
-		<Tab label="HTTP Rules" value="http-rules" icon={<RuleOutlinedIcon />} iconPosition="start" />
+		<Tab
+			label="HTTP Rules"
+			value="http-rules"
+			icon={<RuleOutlinedIcon />}
+			iconPosition="start"
+			sx={{ minHeight: 0 }}
+		/>
 	</Tabs>
 );

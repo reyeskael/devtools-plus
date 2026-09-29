@@ -15,8 +15,8 @@ import { PopupHeader } from './components/PopupHeader';
 import { PopupTabs, type PopupTabKey } from './components/PopupTabs';
 
 const PopupRoot = styled(Box)(({ theme }) => ({
-	width: 720,
-	height: 500,
+	width: 620,
+	height: 415,
 	padding: theme.spacing(2),
 	display: 'flex',
 	flexDirection: 'column',
@@ -32,7 +32,6 @@ const PopupCard = styled(Paper, {
 	display: 'flex',
 	flexDirection: 'column',
 	padding: 16,
-	gap: 16,
 	backgroundColor: dimmed ? theme.palette.grey[100] : theme.palette.background.paper,
 	borderColor: dimmed ? theme.palette.grey[300] : theme.palette.divider,
 }));
@@ -185,7 +184,7 @@ export const Popup = () => {
 							onAction={() => openApp(activeTabConfig.page)}
 						/>
 					) : (
-						<List>
+						<List sx={{ padding: '0px' }}>
 							{itemRows.map((item) => (
 								<ItemRow
 									key={item.id}
