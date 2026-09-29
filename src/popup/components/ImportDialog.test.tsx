@@ -1,11 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImportDialog } from './ImportDialog';
 
 interface RenderOverrides {
 	open?: boolean;
-	pastedText?: string;
-	onPastedTextChange?: jest.Mock;
 	onFileSelected?: jest.Mock;
 	onConfirmPaste?: jest.Mock;
 	onClose?: jest.Mock;
@@ -14,14 +12,12 @@ interface RenderOverrides {
 const renderDialog = (overrides: RenderOverrides = {}) => {
 	const props = {
 		open: overrides.open ?? true,
-		pastedText: overrides.pastedText ?? '',
-		onPastedTextChange: overrides.onPastedTextChange ?? jest.fn(),
 		onFileSelected: overrides.onFileSelected ?? jest.fn(),
 		onConfirmPaste: overrides.onConfirmPaste ?? jest.fn(),
 		onClose: overrides.onClose ?? jest.fn(),
 	};
-	render(<ImportDialog {...props} />);
-	return props;
+	const view = render(<ImportDialog {...props} />);
+	return { ...props, rerender: view.rerender };
 };
 
 describe('ImportDialog', () => {
@@ -40,39 +36,41 @@ describe('ImportDialog', () => {
 		expect(screen.getByRole('button', { name: 'Import' })).toBeInTheDocument();
 	});
 
-	it('disables the Import button when pastedText is empty or whitespace-only', () => {
-		renderDialog({ pastedText: '   ' });
+	it('disables the Import button while the paste field is empty or whitespace-only', () => {
+		renderDialog();
+		expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled();
+
+		fireEvent.change(screen.getByPlaceholderText('[ ... ]'), { target: { value: '   ' } });
 		expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled();
 	});
 
-	it('enables the Import button when pastedText has non-whitespace content', () => {
-		renderDialog({ pastedText: '[]' });
+	it('enables the Import button once the paste field has non-whitespace content', () => {
+		renderDialog();
+
+		fireEvent.change(screen.getByPlaceholderText('[ ... ]'), { target: { value: '[]' } });
+
 		expect(screen.getByRole('button', { name: 'Import' })).not.toBeDisabled();
 	});
 
-	it('displays the current pastedText value in the textarea', () => {
-		renderDialog({ pastedText: '[{"id":"1"}]' });
+	it('reflects typed text in the textarea', () => {
+		renderDialog();
+
+		fireEvent.change(screen.getByPlaceholderText('[ ... ]'), {
+			target: { value: '[{"id":"1"}]' },
+		});
+
 		expect(screen.getByPlaceholderText('[ ... ]')).toHaveValue('[{"id":"1"}]');
 	});
 
-	it('calls onPastedTextChange with the new value when the textarea changes', () => {
-		const onPastedTextChange = jest.fn();
-		renderDialog({ onPastedTextChange });
-
-		fireEvent.change(screen.getByPlaceholderText('[ ... ]'), {
-			target: { value: '[1,2,3]' },
-		});
-
-		expect(onPastedTextChange).toHaveBeenCalledWith('[1,2,3]');
-	});
-
-	it('calls onConfirmPaste when the Import button is clicked', async () => {
+	it('calls onConfirmPaste with the current paste field text when the Import button is clicked', async () => {
 		const onConfirmPaste = jest.fn();
-		renderDialog({ pastedText: '[]', onConfirmPaste });
+		renderDialog({ onConfirmPaste });
 
+		fireEvent.change(screen.getByPlaceholderText('[ ... ]'), { target: { value: '[]' } });
 		await userEvent.click(screen.getByRole('button', { name: 'Import' }));
 
 		expect(onConfirmPaste).toHaveBeenCalledTimes(1);
+		expect(onConfirmPaste).toHaveBeenCalledWith('[]');
 	});
 
 	it('calls onClose when Cancel is clicked', async () => {
@@ -82,6 +80,35 @@ describe('ImportDialog', () => {
 		await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
 		expect(onClose).toHaveBeenCalledTimes(1);
+	});
+
+	it('clears the paste field once the dialog finishes closing', async () => {
+		const { onFileSelected, onConfirmPaste, onClose, rerender } = renderDialog({ open: true });
+
+		fireEvent.change(screen.getByPlaceholderText('[ ... ]'), { target: { value: 'some text' } });
+		expect(screen.getByPlaceholderText('[ ... ]')).toHaveValue('some text');
+
+		rerender(
+			<ImportDialog
+				open={false}
+				onFileSelected={onFileSelected}
+				onConfirmPaste={onConfirmPaste}
+				onClose={onClose}
+			/>,
+		);
+		await waitFor(() => {
+			expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+		});
+
+		rerender(
+			<ImportDialog
+				open={true}
+				onFileSelected={onFileSelected}
+				onConfirmPaste={onConfirmPaste}
+				onClose={onClose}
+			/>,
+		);
+		expect(screen.getByPlaceholderText('[ ... ]')).toHaveValue('');
 	});
 
 	it('calls onFileSelected with the chosen file and resets the input value', () => {

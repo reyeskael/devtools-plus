@@ -1,20 +1,15 @@
 import { Box, Button, Typography } from '@mui/material';
 import { openApp } from '../../shared/chrome/openApp';
 import { BrandSwitch } from '../../shared/components/BrandSwitch';
-
-interface PopupHeaderProps {
-	isRunning: boolean;
-	onRunningChange: (running: boolean) => void;
-}
+import { useItemsStateContext } from '../context/ItemsStateContext';
 
 /**
  * The popup's top bar: extension icon, master running switch, and a button to open the full app.
  *
- * @param props.isRunning - Whether interception is currently on.
- * @param props.onRunningChange - Called with the new running state when the switch is toggled.
  * @returns The popup header UI.
  */
-export const PopupHeader = ({ isRunning, onRunningChange }: PopupHeaderProps) => {
+export const PopupHeader = () => {
+	const { isRunning, setRunning } = useItemsStateContext();
 	const statusLabel = isRunning ? 'DevTools Plus running' : 'DevTools Plus off';
 
 	return (
@@ -29,7 +24,7 @@ export const PopupHeader = ({ isRunning, onRunningChange }: PopupHeaderProps) =>
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
 					<BrandSwitch
 						checked={isRunning}
-						onChange={(event) => onRunningChange(event.target.checked)}
+						onChange={(event) => setRunning(event.target.checked)}
 						slotProps={{ input: { 'aria-label': 'Master switch' } }}
 					/>
 					<Typography variant="caption" color="text.secondary">

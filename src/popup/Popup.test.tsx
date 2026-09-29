@@ -179,13 +179,13 @@ describe('Popup', () => {
 			}
 		});
 
-		it('hides the toolbar (Export/Import/Add) on the http-rules tab', async () => {
+		it('keeps the toolbar (Export/Import/Add) visible on the http-rules tab', async () => {
 			render(<Popup />);
 			await userEvent.click(httpRulesTab());
 
-			expect(screen.queryByRole('button', { name: 'Export' })).not.toBeInTheDocument();
-			expect(screen.queryByRole('button', { name: 'Import' })).not.toBeInTheDocument();
-			expect(screen.queryByRole('button', { name: /^add$/i })).not.toBeInTheDocument();
+			expect(screen.getByRole('button', { name: 'Export' })).toBeInTheDocument();
+			expect(screen.getByRole('button', { name: 'Import' })).toBeInTheDocument();
+			expect(screen.getByRole('button', { name: /^add$/i })).toBeInTheDocument();
 		});
 	});
 

@@ -1,7 +1,9 @@
 import { Box, List, Paper, styled } from '@mui/material';
+import { useState } from 'react';
 import { openApp, type AppPage } from '../../shared/chrome/openApp';
 import { formatHttpRuleSummary, formatMockResponseSummary } from '../../shared/items/formatters';
 import type { HttpRuleItem, MockResponseItem, PopupItem } from '../../shared/items/types';
+import { useItemsStateContext } from '../context/ItemsStateContext';
 import { EmptyState } from './EmptyState';
 import { ItemRow, type ItemRowViewModel } from './ItemRow';
 import { PanelToolbar } from './PanelToolbar';
@@ -74,62 +76,30 @@ const getItemRows = (
 	}));
 };
 
-interface PopupPanelProps {
-	activeTab: PopupTabKey;
-	onTabChange: (tab: PopupTabKey) => void;
-	isRunning: boolean;
-	mockResponses: MockResponseItem[];
-	httpRules: HttpRuleItem[];
-	onExport: () => void;
-	onImport: () => void;
-	onToggleEnabled: (kind: PopupItem['kind'], id: string) => void;
-	onDelete: (kind: PopupItem['kind'], id: string) => void;
-}
-
 /**
- * The popup's tabbed panel card: tabs, an Export/Import/Add toolbar, and the active tab's
- * item list — or, for the not-yet-enforced HTTP Rules tab, an under-construction placeholder
- * in place of the toolbar and list.
+ * The popup's tabbed panel card: a shared Export/Import/Add toolbar and tabs, followed by the
+ * active tab's item list — or, for the not-yet-enforced HTTP Rules tab, an under-construction
+ * placeholder in place of the list.
  *
- * @param props.activeTab - Which tab is active.
- * @param props.onTabChange - Called with the newly selected tab.
- * @param props.isRunning - Whether interception is on; dims the card and disables row controls when off.
- * @param props.mockResponses - The full mock responses list.
- * @param props.httpRules - The full HTTP rules list.
- * @param props.onExport - Called when the Export button is clicked.
- * @param props.onImport - Called when the Import button is clicked.
- * @param props.onToggleEnabled - Called with the active tab's kind and an item's id when its switch is toggled.
- * @param props.onDelete - Called with the active tab's kind and an item's id when its delete button is clicked.
  * @returns The popup panel UI.
  */
-export const PopupPanel = ({
-	activeTab,
-	onTabChange,
-	isRunning,
-	mockResponses,
-	httpRules,
-	onExport,
-	onImport,
-	onToggleEnabled,
-	onDelete,
-}: PopupPanelProps) => {
+export const PopupPanel = () => {
+	const { isRunning, mockResponses, httpRules, toggleItem, removeItem } = useItemsStateContext();
+	const [activeTab, setActiveTab] = useState<PopupTabKey>('mock-responses');
 	const activeTabConfig = TAB_CONFIG[activeTab];
 	const itemRows = getItemRows(activeTab, mockResponses, httpRules);
 
 	return (
 		<PopupCard variant="outlined" dimmed={!isRunning}>
+			<PanelToolbar page={activeTabConfig.page} />
+			<PopupTabs value={activeTab} onChange={setActiveTab} />
 			{activeTab === 'http-rules' ? (
-				<>
-					<PopupTabs value={activeTab} onChange={onTabChange} />
-					<UnderConstruction
-						headline="HTTP Rules is under construction"
-						body="Block, redirect, and modify-headers rules aren't enforced yet. Check back in a future update."
-					/>
-				</>
+				<UnderConstruction
+					headline="HTTP Rules is under construction"
+					body="Block, redirect, and modify-headers rules aren't enforced yet. Check back in a future update."
+				/>
 			) : (
 				<>
-					<PanelToolbar page={activeTabConfig.page} onExport={onExport} onImport={onImport} />
-					<PopupTabs value={activeTab} onChange={onTabChange} />
 					<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
 						{itemRows.length === 0 ? (
 							<EmptyState
@@ -145,8 +115,8 @@ export const PopupPanel = ({
 										key={item.id}
 										item={item}
 										isRunning={isRunning}
-										onToggleEnabled={(id) => onToggleEnabled(activeTabConfig.kind, id)}
-										onDelete={(id) => onDelete(activeTabConfig.kind, id)}
+										onToggleEnabled={(id) => toggleItem(activeTabConfig.kind, id)}
+										onDelete={(id) => removeItem(activeTabConfig.kind, id)}
 									/>
 								))}
 							</List>
