@@ -3,13 +3,11 @@ import type { RuleSnapshot } from '../../shared/messaging/types';
 
 const snapshotA: RuleSnapshot = {
 	mockResponses: [],
-	httpRules: [],
 	isRunning: true,
 };
 
 const snapshotB: RuleSnapshot = {
 	mockResponses: [],
-	httpRules: [],
 	isRunning: false,
 };
 

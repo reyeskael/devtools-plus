@@ -1,8 +1,8 @@
 import { Box, List, Paper, styled } from '@mui/material';
 import { useState } from 'react';
 import { openApp, type AppPage } from '../../shared/chrome/openApp';
-import { formatHttpRuleSummary, formatMockResponseSummary } from '../../shared/items/formatters';
-import type { HttpRuleItem, MockResponseItem, PopupItem } from '../../shared/items/types';
+import { formatMockResponseSummary, formatRedirectSummary } from '../../shared/items/formatters';
+import type { MockResponseItem, PopupItem, RedirectRuleItem } from '../../shared/items/types';
 import { useItemsStateContext } from '../../shared/context/ItemsStateContext';
 import { EmptyState } from './EmptyState';
 import { ItemRow, type ItemRowViewModel } from './ItemRow';
@@ -39,7 +39,7 @@ const TAB_CONFIG: Record<PopupTabKey, TabConfig> = {
 		emptyActionLabel: 'Add mock response',
 	},
 	'http-rules': {
-		kind: 'http-rule',
+		kind: 'redirect',
 		page: 'http-rules',
 		emptyHeadline: 'No HTTP rules yet',
 		emptyBody: 'Add an HTTP rule in the full app to get started.',
@@ -52,13 +52,13 @@ const TAB_CONFIG: Record<PopupTabKey, TabConfig> = {
  *
  * @param activeTab - Which tab is active, determining which list to project.
  * @param mockResponses - The full mock responses list.
- * @param httpRules - The full HTTP rules list.
+ * @param redirects - The full redirect rules list.
  * @returns Row view models for the active tab's items.
  */
 const getItemRows = (
 	activeTab: PopupTabKey,
 	mockResponses: MockResponseItem[],
-	httpRules: HttpRuleItem[],
+	redirects: RedirectRuleItem[],
 ): ItemRowViewModel[] => {
 	if (activeTab === 'mock-responses') {
 		return mockResponses.map((item) => ({
@@ -68,10 +68,10 @@ const getItemRows = (
 			enabled: item.enabled,
 		}));
 	}
-	return httpRules.map((item) => ({
+	return redirects.map((item) => ({
 		id: item.id,
 		label: item.name,
-		secondary: formatHttpRuleSummary(item),
+		secondary: formatRedirectSummary(item),
 		enabled: item.enabled,
 	}));
 };
@@ -84,10 +84,10 @@ const getItemRows = (
  * @returns The popup panel UI.
  */
 export const PopupPanel = () => {
-	const { isRunning, mockResponses, httpRules, toggleItem, removeItem } = useItemsStateContext();
+	const { isRunning, mockResponses, redirects, toggleItem, removeItem } = useItemsStateContext();
 	const [activeTab, setActiveTab] = useState<PopupTabKey>('mock-responses');
 	const activeTabConfig = TAB_CONFIG[activeTab];
-	const itemRows = getItemRows(activeTab, mockResponses, httpRules);
+	const itemRows = getItemRows(activeTab, mockResponses, redirects);
 
 	return (
 		<PopupCard variant="outlined" dimmed={!isRunning}>

@@ -1,5 +1,5 @@
-import { formatHttpRuleSummary, formatMockResponseSummary } from './formatters';
-import type { HttpRuleItem, MockResponseItem } from './types';
+import { formatMockResponseSummary, formatRedirectSummary } from './formatters';
+import type { MockResponseItem, RedirectRuleItem } from './types';
 
 describe('formatMockResponseSummary', () => {
 	it('formats method, urlPattern, and statusCode into a summary string', () => {
@@ -32,45 +32,63 @@ describe('formatMockResponseSummary', () => {
 	});
 });
 
-describe('formatHttpRuleSummary', () => {
-	it('formats action and urlPattern without a target when target is absent', () => {
-		const item: HttpRuleItem = {
-			id: 'rule-block-legacy',
-			name: 'Block legacy API',
-			kind: 'http-rule',
-			enabled: true,
-			urlPattern: '/api/legacy/*',
-			action: 'block',
-		};
-
-		expect(formatHttpRuleSummary(item)).toBe('block /api/legacy/*');
-	});
-
-	it('appends the target with an arrow when target is present', () => {
-		const item: HttpRuleItem = {
+describe('formatRedirectSummary', () => {
+	it('renders "ALL" when methods is omitted, meaning the rule applies to every method', () => {
+		const item: RedirectRuleItem = {
 			id: 'rule-redirect-old-path',
 			name: 'Redirect old path',
-			kind: 'http-rule',
+			kind: 'redirect',
 			enabled: false,
+			matchType: 'wildcard',
 			urlPattern: '/old/path',
-			action: 'redirect',
-			target: '/new/path',
+			destination: '/new/path',
 		};
 
-		expect(formatHttpRuleSummary(item)).toBe('redirect /old/path → /new/path');
+		expect(formatRedirectSummary(item)).toBe('ALL /old/path → /new/path');
 	});
 
-	it('omits the target arrow when target is an empty string (falsy)', () => {
-		const item: HttpRuleItem = {
-			id: 'rule-empty-target',
-			name: 'Empty target rule',
-			kind: 'http-rule',
+	it('renders "ALL" when methods is an empty array', () => {
+		const item: RedirectRuleItem = {
+			id: 'rule-empty-methods',
+			name: 'Empty methods rule',
+			kind: 'redirect',
 			enabled: true,
+			matchType: 'wildcard',
 			urlPattern: '/api/public/*',
-			action: 'modify-headers',
-			target: '',
+			destination: 'https://localhost:3000/$1',
+			methods: [],
 		};
 
-		expect(formatHttpRuleSummary(item)).toBe('modify-headers /api/public/*');
+		expect(formatRedirectSummary(item)).toBe('ALL /api/public/* → https://localhost:3000/$1');
+	});
+
+	it('renders a comma-joined method list when methods is a non-empty scoped list', () => {
+		const item: RedirectRuleItem = {
+			id: 'rule-scoped-methods',
+			name: 'Scoped methods rule',
+			kind: 'redirect',
+			enabled: true,
+			matchType: 'wildcard',
+			urlPattern: '*.js',
+			destination: 'https://localhost:3000/$1',
+			methods: ['GET', 'POST'],
+		};
+
+		expect(formatRedirectSummary(item)).toBe('GET,POST *.js → https://localhost:3000/$1');
+	});
+
+	it('renders a single scoped method without a trailing comma', () => {
+		const item: RedirectRuleItem = {
+			id: 'rule-single-method',
+			name: 'Single method rule',
+			kind: 'redirect',
+			enabled: true,
+			matchType: 'regex',
+			urlPattern: '^/api/v1/(.*)$',
+			destination: '/api/v2/$1',
+			methods: ['DELETE'],
+		};
+
+		expect(formatRedirectSummary(item)).toBe('DELETE ^/api/v1/(.*)$ → /api/v2/$1');
 	});
 });

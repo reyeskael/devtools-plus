@@ -20,7 +20,6 @@ const mockUsersGet: MockResponseItem = {
 
 const snapshotWith = (overrides: Partial<RuleSnapshot> = {}): RuleSnapshot => ({
 	mockResponses: [mockUsersGet],
-	httpRules: [],
 	isRunning: true,
 	...overrides,
 });

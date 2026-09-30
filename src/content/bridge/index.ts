@@ -11,23 +11,35 @@ import type { RuleSnapshot, RulesSnapshotMessage } from '../../shared/messaging/
  */
 const EMPTY_SNAPSHOT: RuleSnapshot = {
 	mockResponses: [],
-	httpRules: [],
 	isRunning: true,
 };
 
 /**
+ * The shape actually persisted at `chrome.storage.local[STORAGE_KEY]`, which also carries
+ * `redirects` (owned by the background DNR worker, not the interceptor). Typed loosely here —
+ * the bridge never reads `redirects`, only makes sure it's dropped before anything is posted
+ * into the page — so this doesn't need to track `ItemsStateContext`'s stored shape exactly.
+ */
+type StoredRuleSnapshot = RuleSnapshot & { redirects?: unknown };
+
+/**
  * Wraps a stored rule snapshot (or its absence) in a `rules-snapshot` message for the
- * interceptor.
+ * interceptor. Picks only `mockResponses` and `isRunning` off `stored` — storage may also carry
+ * a `redirects` array, which must never reach the page (see {@link RuleSnapshot}'s doc comment).
  *
- * @param stored - The snapshot read from `chrome.storage.local`, or `undefined` if unset.
+ * @param stored - The value read from `chrome.storage.local`, or `undefined` if unset.
  * @returns The message to post into the page. Falls back to {@link EMPTY_SNAPSHOT} when
  * `stored` is `undefined`, so posting *something* opens the interceptor's rule gate
  * immediately instead of waiting out its hold timeout.
  */
-export const buildRulesSnapshotMessage = (stored: RuleSnapshot | undefined): RulesSnapshotMessage => ({
+export const buildRulesSnapshotMessage = (
+	stored: StoredRuleSnapshot | undefined,
+): RulesSnapshotMessage => ({
 	source: MESSAGE_SOURCE,
 	type: 'rules-snapshot',
-	payload: stored ?? EMPTY_SNAPSHOT,
+	payload: stored
+		? { mockResponses: stored.mockResponses, isRunning: stored.isRunning }
+		: EMPTY_SNAPSHOT,
 });
 
 /**
@@ -53,9 +65,9 @@ export const shouldPostForChange = (
 /**
  * Posts a rule snapshot into the page for the interceptor to pick up.
  *
- * @param stored - The snapshot to post, or `undefined` if storage has none yet.
+ * @param stored - The stored value to post from, or `undefined` if storage has none yet.
  */
-const postSnapshot = (stored: RuleSnapshot | undefined): void => {
+const postSnapshot = (stored: StoredRuleSnapshot | undefined): void => {
 	window.postMessage(buildRulesSnapshotMessage(stored), window.location.origin);
 };
 
@@ -68,14 +80,14 @@ const postSnapshot = (stored: RuleSnapshot | undefined): void => {
  */
 export const initBridge = (): void => {
 	chrome.storage.local.get(STORAGE_KEY, (result) => {
-		postSnapshot(result[STORAGE_KEY] as RuleSnapshot | undefined);
+		postSnapshot(result[STORAGE_KEY] as StoredRuleSnapshot | undefined);
 	});
 
 	chrome.storage.onChanged.addListener((changes, areaName) => {
 		if (!shouldPostForChange(changes, areaName)) {
 			return;
 		}
-		postSnapshot(changes[STORAGE_KEY].newValue as RuleSnapshot | undefined);
+		postSnapshot(changes[STORAGE_KEY].newValue as StoredRuleSnapshot | undefined);
 	});
 
 	chrome.runtime.sendMessage(buildMockCountMessage(0));

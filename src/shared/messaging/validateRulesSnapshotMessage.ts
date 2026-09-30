@@ -18,6 +18,6 @@ export const isRulesSnapshotMessage = (data: unknown): data is RulesSnapshotMess
 	if (typeof message.payload !== 'object' || message.payload === null) {
 		return false;
 	}
-	const { mockResponses, httpRules, isRunning } = message.payload as Record<string, unknown>;
-	return Array.isArray(mockResponses) && Array.isArray(httpRules) && typeof isRunning === 'boolean';
+	const { mockResponses, isRunning } = message.payload as Record<string, unknown>;
+	return Array.isArray(mockResponses) && typeof isRunning === 'boolean';
 };

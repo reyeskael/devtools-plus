@@ -7,7 +7,6 @@ const validMessage: RulesSnapshotMessage = {
 	type: 'rules-snapshot',
 	payload: {
 		mockResponses: [],
-		httpRules: [],
 		isRunning: true,
 	},
 };
@@ -56,15 +55,6 @@ describe('isRulesSnapshotMessage', () => {
 		).toBe(false);
 	});
 
-	it('rejects a message where httpRules is not an array', () => {
-		expect(
-			isRulesSnapshotMessage({
-				...validMessage,
-				payload: { ...validMessage.payload, httpRules: 'not-an-array' },
-			}),
-		).toBe(false);
-	});
-
 	it('rejects a message where isRunning is not a boolean', () => {
 		expect(
 			isRulesSnapshotMessage({
@@ -78,7 +68,7 @@ describe('isRulesSnapshotMessage', () => {
 		expect(
 			isRulesSnapshotMessage({
 				...validMessage,
-				payload: { ...validMessage.payload, mockResponses: [123], httpRules: ['not-an-item'] },
+				payload: { ...validMessage.payload, mockResponses: [123] },
 			}),
 		).toBe(true);
 	});

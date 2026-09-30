@@ -8,13 +8,11 @@ import type { RuleSnapshot, RulesSnapshotMessage } from '../../shared/messaging/
 
 const snapshot: RuleSnapshot = {
 	mockResponses: [],
-	httpRules: [],
 	isRunning: false,
 };
 
 const emptySnapshot: RuleSnapshot = {
 	mockResponses: [],
-	httpRules: [],
 	isRunning: true,
 };
 
@@ -36,7 +34,6 @@ const runningSnapshot: RuleSnapshot = {
 			body: {},
 		},
 	],
-	httpRules: [],
 	isRunning: true,
 };
 
@@ -65,6 +62,22 @@ describe('buildRulesSnapshotMessage', () => {
 		expect(message.payload).toEqual(runningSnapshot);
 		expect(message.payload).not.toBe(emptySnapshot);
 		expect(isRulesSnapshotMessage(message)).toBe(true);
+	});
+
+	it('strips a `redirects` array off the stored value instead of forwarding it into the page', () => {
+		const storedWithRedirects = {
+			...runningSnapshot,
+			redirects: [{ id: 'redirect-1', name: 'Some redirect', kind: 'redirect' }],
+		};
+
+		const message = buildRulesSnapshotMessage(storedWithRedirects);
+
+		expect(message.payload).toEqual({
+			mockResponses: runningSnapshot.mockResponses,
+			isRunning: runningSnapshot.isRunning,
+		});
+		expect(message.payload).not.toHaveProperty('redirects');
+		expect(Object.keys(message.payload).sort()).toEqual(['isRunning', 'mockResponses']);
 	});
 });
 
@@ -194,6 +207,47 @@ describe('initBridge', () => {
 		onChanged({ [STORAGE_KEY]: { newValue: snapshot } }, 'sync');
 
 		expect(postMessageSpy).not.toHaveBeenCalled();
+	});
+
+	it('never posts a `redirects` key into the page, even when storage contains one on initial load', () => {
+		chrome.storage.local.set({
+			[STORAGE_KEY]: {
+				...runningSnapshot,
+				redirects: [{ id: 'redirect-1', name: 'Some redirect', kind: 'redirect' }],
+			},
+		});
+		const postMessageSpy = jest.spyOn(window, 'postMessage');
+
+		initBridge();
+
+		const [message] = postMessageSpy.mock.calls[0];
+		const payload = (message as RulesSnapshotMessage).payload;
+		expect(payload).toEqual(runningSnapshot);
+		expect(payload).not.toHaveProperty('redirects');
+	});
+
+	it('never posts a `redirects` key into the page via the onChanged mirror path', () => {
+		const postMessageSpy = jest.spyOn(window, 'postMessage');
+		initBridge();
+		const onChanged = getOnChangedListener();
+		postMessageSpy.mockClear();
+
+		onChanged(
+			{
+				[STORAGE_KEY]: {
+					newValue: {
+						...runningSnapshot,
+						redirects: [{ id: 'redirect-1', name: 'Some redirect', kind: 'redirect' }],
+					},
+				},
+			},
+			'local',
+		);
+
+		const [message] = postMessageSpy.mock.calls[0];
+		const payload = (message as RulesSnapshotMessage).payload;
+		expect(payload).toEqual(runningSnapshot);
+		expect(payload).not.toHaveProperty('redirects');
 	});
 
 	it('posts a well-formed empty snapshot when the popup storage key is removed', () => {

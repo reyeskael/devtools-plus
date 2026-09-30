@@ -46,7 +46,7 @@ const renderAtPath = (path: string) => {
 describe('MockApiPage', () => {
 	beforeEach(() => {
 		chrome.storage.local.set({
-			[STORAGE_KEY]: { mockResponses: [], httpRules: [], isRunning: true },
+			[STORAGE_KEY]: { mockResponses: [], redirects: [], isRunning: true },
 		});
 	});
 
@@ -73,7 +73,7 @@ describe('MockApiPage', () => {
 
 	it('renders a row for each mock response with its discrete fields', () => {
 		chrome.storage.local.set({
-			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, redirects: [], isRunning: true },
 		});
 		renderAtPath('/mock-api');
 		expect(screen.getByText('Get users')).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('MockApiPage', () => {
 
 	it('does not render the empty state when there are mock responses', () => {
 		chrome.storage.local.set({
-			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, redirects: [], isRunning: true },
 		});
 		renderAtPath('/mock-api');
 		expect(screen.queryByText(/no mock responses yet/i)).not.toBeInTheDocument();
@@ -111,7 +111,7 @@ describe('MockApiPage', () => {
 
 	it('navigates to /mock-api/{id} when a row edit button is clicked', async () => {
 		chrome.storage.local.set({
-			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, redirects: [], isRunning: true },
 		});
 		const { history } = renderAtPath('/mock-api');
 		await userEvent.click(screen.getByRole('button', { name: `Edit ${fixtureMockResponses[0].name}` }));
@@ -120,7 +120,7 @@ describe('MockApiPage', () => {
 
 	it('navigates to the specific row\'s id when a non-first row\'s edit button is clicked', async () => {
 		chrome.storage.local.set({
-			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, redirects: [], isRunning: true },
 		});
 		const { history } = renderAtPath('/mock-api');
 		await userEvent.click(screen.getByRole('button', { name: `Edit ${fixtureMockResponses[1].name}` }));
@@ -130,7 +130,7 @@ describe('MockApiPage', () => {
 
 	it('toggles a row\'s enabled state via its switch without navigating', async () => {
 		chrome.storage.local.set({
-			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, redirects: [], isRunning: true },
 		});
 		const { history } = renderAtPath('/mock-api');
 		const toggle = screen.getByRole('switch', { name: `${fixtureMockResponses[1].name} switch` });
@@ -142,7 +142,7 @@ describe('MockApiPage', () => {
 
 	it('removes a row when its delete button is clicked, without navigating', async () => {
 		chrome.storage.local.set({
-			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, httpRules: [], isRunning: true },
+			[STORAGE_KEY]: { mockResponses: fixtureMockResponses, redirects: [], isRunning: true },
 		});
 		const { history } = renderAtPath('/mock-api');
 		await userEvent.click(screen.getByRole('button', { name: `Delete ${fixtureMockResponses[0].name}` }));

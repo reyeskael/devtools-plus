@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Popup } from './Popup';
-import type { HttpRuleItem, MockResponseItem } from '../shared/items/types';
+import type { MockResponseItem, RedirectRuleItem } from '../shared/items/types';
 
 jest.mock('../shared/chrome/openApp', () => ({
 	openApp: jest.fn(),
@@ -47,23 +47,24 @@ const fixtureMockResponses: MockResponseItem[] = [
 	},
 ];
 
-const fixtureHttpRules: HttpRuleItem[] = [
+const fixtureRedirects: RedirectRuleItem[] = [
 	{
 		id: 'hr-1',
 		name: 'Block ads',
-		kind: 'http-rule',
+		kind: 'redirect',
 		enabled: true,
+		matchType: 'wildcard',
 		urlPattern: '/ads/*',
-		action: 'block',
+		destination: '/blocked',
 	},
 	{
 		id: 'hr-2',
 		name: 'Redirect old',
-		kind: 'http-rule',
+		kind: 'redirect',
 		enabled: false,
+		matchType: 'wildcard',
 		urlPattern: '/old',
-		action: 'redirect',
-		target: '/new',
+		destination: '/new',
 	},
 ];
 
@@ -100,7 +101,7 @@ describe('Popup', () => {
 		chrome.storage.local.set({
 			[STORAGE_KEY]: {
 				mockResponses: fixtureMockResponses,
-				httpRules: fixtureHttpRules,
+				redirects: fixtureRedirects,
 				isRunning: true,
 			},
 		});
@@ -147,7 +148,7 @@ describe('Popup', () => {
 			for (const item of fixtureMockResponses) {
 				expect(screen.getByText(item.name)).toBeInTheDocument();
 			}
-			for (const item of fixtureHttpRules) {
+			for (const item of fixtureRedirects) {
 				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
 			}
 
@@ -165,7 +166,7 @@ describe('Popup', () => {
 			await userEvent.click(httpRulesTab());
 
 			expect(screen.getByText('HTTP Rules is under construction')).toBeInTheDocument();
-			for (const item of fixtureHttpRules) {
+			for (const item of fixtureRedirects) {
 				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
 			}
 
@@ -317,7 +318,7 @@ describe('Popup', () => {
 			expect(filename).toMatch(/^devtools-plus-items-\d{4}-\d{2}-\d{2}\.json$/);
 			expect(JSON.parse(payload as string)).toEqual([
 				...fixtureMockResponses,
-				...fixtureHttpRules,
+				...fixtureRedirects,
 			]);
 		});
 	});
@@ -352,7 +353,7 @@ describe('Popup', () => {
 			await userEvent.click(within(dialog).getByRole('button', { name: 'Import' }));
 
 			expect(
-				await screen.findByText('Imported 1 mock responses, 0 HTTP rules'),
+				await screen.findByText('Imported 1 mock responses, 0 redirects'),
 			).toBeInTheDocument();
 			await waitFor(() => {
 				expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -395,7 +396,7 @@ describe('Popup', () => {
 			fireEvent.change(fileInput, { target: { files: [file] } });
 
 			expect(
-				await screen.findByText('Imported 1 mock responses, 0 HTTP rules'),
+				await screen.findByText('Imported 1 mock responses, 0 redirects'),
 			).toBeInTheDocument();
 			expect(screen.getByText('New Mock')).toBeInTheDocument();
 		});

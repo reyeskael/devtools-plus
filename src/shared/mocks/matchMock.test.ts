@@ -1,5 +1,5 @@
 import { findMatchingMock } from './matchMock';
-import type { HttpRuleItem, MockResponseItem, PopupItem } from '../items/types';
+import type { MockResponseItem, PopupItem, RedirectRuleItem } from '../items/types';
 
 // Local fixture — seedMockResponses is an empty array (mock responses now
 // come from Import, not a bundled seed), so this test can't look items up
@@ -16,13 +16,14 @@ const yearlySummary200: MockResponseItem = {
 	body: { reports: [] },
 };
 
-const httpRuleWithMatchingPattern: HttpRuleItem = {
+const redirectWithMatchingPattern: RedirectRuleItem = {
 	id: 'rule-matches-mock-pattern',
 	name: 'Rule sharing a pattern with a mock',
-	kind: 'http-rule',
+	kind: 'redirect',
 	enabled: true,
+	matchType: 'wildcard',
 	urlPattern: 'api/users',
-	action: 'block',
+	destination: '/blocked',
 };
 
 const mockUsersGet: MockResponseItem = {
@@ -126,8 +127,8 @@ describe('findMatchingMock', () => {
 		).toBeUndefined();
 	});
 
-	it('ignores http-rule items even when their urlPattern would otherwise match', () => {
-		const items: PopupItem[] = [httpRuleWithMatchingPattern];
+	it('ignores redirect items even when their urlPattern would otherwise match', () => {
+		const items: PopupItem[] = [redirectWithMatchingPattern];
 
 		expect(
 			findMatchingMock(items, { method: 'GET', url: 'https://example.com/api/users' }),

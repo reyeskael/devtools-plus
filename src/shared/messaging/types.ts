@@ -1,12 +1,16 @@
-import type { HttpRuleItem, MockResponseItem } from '../items/types';
+import type { MockResponseItem } from '../items/types';
 
 /** Tags every message in this system so validators can reject anything else on the page. */
 export const MESSAGE_SOURCE = 'devtools-plus' as const;
 
-/** The popup's full mock/rule state, as posted from the bridge to the interceptor. */
+/**
+ * The popup's mock-response state and running flag, as posted from the bridge to the
+ * interceptor. Redirect rules are deliberately excluded — they're enforced in the background
+ * worker via `chrome.declarativeNetRequest`, so the MAIN-world interceptor never needs to see
+ * them.
+ */
 export interface RuleSnapshot {
 	mockResponses: MockResponseItem[];
-	httpRules: HttpRuleItem[];
 	isRunning: boolean;
 }
 

@@ -1,29 +1,29 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { seedHttpRules, seedMockResponses } from '../items/seedItems';
+import { seedMockResponses } from '../items/seedItems';
 import { POPUP_ITEMS_STORAGE_KEY as STORAGE_KEY } from '../storage/keys';
-import type { HttpRuleItem, MockResponseItem, PopupItem } from '../items/types';
+import type { MockResponseItem, PopupItem, RedirectRuleItem } from '../items/types';
 
 interface StoredPopupItemsState {
 	mockResponses: MockResponseItem[];
-	httpRules: HttpRuleItem[];
+	redirects: RedirectRuleItem[];
 	isRunning: boolean;
 }
 
 export interface ItemsStateContextValue {
 	mockResponses: MockResponseItem[];
-	httpRules: HttpRuleItem[];
+	redirects: RedirectRuleItem[];
 	isRunning: boolean;
 	/**
 	 * Whether the initial `chrome.storage.local.get` load has completed (whether or not it found
 	 * anything to hydrate). Callers that need to distinguish "no persisted data yet" from "still
 	 * loading" — e.g. deciding whether an id genuinely doesn't exist — should gate on this rather
-	 * than on `mockResponses`/`httpRules` being non-empty.
+	 * than on `mockResponses`/`redirects` being non-empty.
 	 */
 	hasHydrated: boolean;
 	setRunning: (running: boolean) => void;
 	toggleItem: (kind: PopupItem['kind'], id: string) => void;
 	removeItem: (kind: PopupItem['kind'], id: string) => void;
-	replaceItems: (mockResponses?: MockResponseItem[], httpRules?: HttpRuleItem[]) => void;
+	replaceItems: (mockResponses?: MockResponseItem[], redirects?: RedirectRuleItem[]) => void;
 	upsertMockResponse: (item: MockResponseItem) => void;
 }
 
@@ -35,7 +35,7 @@ export interface ItemsStateContextValue {
 export const ItemsStateContext = createContext<ItemsStateContextValue | null>(null);
 
 /**
- * Owns the popup's `{ mockResponses, httpRules, isRunning }` state, hydrating it from
+ * Owns the popup's `{ mockResponses, redirects, isRunning }` state, hydrating it from
  * `chrome.storage.local` on mount and persisting every subsequent change back to it — the
  * top of the popup → bridge → interceptor data flow described in the repo's CLAUDE.md.
  *
@@ -44,7 +44,7 @@ export const ItemsStateContext = createContext<ItemsStateContextValue | null>(nu
  */
 const useItemsState = (): ItemsStateContextValue => {
 	const [mockResponses, setMockResponses] = useState<MockResponseItem[]>(seedMockResponses);
-	const [httpRules, setHttpRules] = useState<HttpRuleItem[]>(seedHttpRules);
+	const [redirects, setRedirects] = useState<RedirectRuleItem[]>([]);
 	const [isRunning, setIsRunning] = useState(true);
 	const [hasHydrated, setHasHydrated] = useState(false);
 	const hasHydratedRef = useRef(false);
@@ -59,7 +59,9 @@ const useItemsState = (): ItemsStateContextValue => {
 			const stored = result[STORAGE_KEY] as StoredPopupItemsState | undefined;
 			if (stored) {
 				setMockResponses(stored.mockResponses);
-				setHttpRules(stored.httpRules);
+				// Storage written by a pre-rename build (or otherwise missing `redirects`)
+				// has no `redirects` key at all — default it rather than crash later.
+				setRedirects(stored.redirects ?? []);
 				setIsRunning(stored.isRunning);
 			}
 			hasHydratedRef.current = true;
@@ -74,7 +76,7 @@ const useItemsState = (): ItemsStateContextValue => {
 	 * update, dropping a would-be effect before it runs. Also records the payload so the
 	 * `onChanged` listener below can ignore the event this write itself fires.
 	 *
-	 * @param next - The full `{ mockResponses, httpRules, isRunning }` state to persist.
+	 * @param next - The full `{ mockResponses, redirects, isRunning }` state to persist.
 	 */
 	const persist = (next: StoredPopupItemsState) => {
 		if (!hasHydratedRef.current) {
@@ -101,16 +103,19 @@ const useItemsState = (): ItemsStateContextValue => {
 			if (!nextValue) {
 				return;
 			}
+			// Storage written by a pre-rename build (or otherwise missing `redirects`) has no
+			// `redirects` key at all — default it rather than crash later.
+			const nextRedirects = nextValue.redirects ?? [];
 			const nextPayload = JSON.stringify({
 				mockResponses: nextValue.mockResponses,
-				httpRules: nextValue.httpRules,
+				redirects: nextRedirects,
 				isRunning: nextValue.isRunning,
 			});
 			if (nextPayload === lastWrittenPayloadRef.current) {
 				return;
 			}
 			setMockResponses(nextValue.mockResponses);
-			setHttpRules(nextValue.httpRules);
+			setRedirects(nextRedirects);
 			setIsRunning(nextValue.isRunning);
 		};
 
@@ -130,14 +135,14 @@ const useItemsState = (): ItemsStateContextValue => {
 				item.id === id ? { ...item, enabled: !item.enabled } : item,
 			);
 			setMockResponses(next);
-			persist({ mockResponses: next, httpRules, isRunning });
+			persist({ mockResponses: next, redirects, isRunning });
 			return;
 		}
-		const next = httpRules.map((item) =>
+		const next = redirects.map((item) =>
 			item.id === id ? { ...item, enabled: !item.enabled } : item,
 		);
-		setHttpRules(next);
-		persist({ mockResponses, httpRules: next, isRunning });
+		setRedirects(next);
+		persist({ mockResponses, redirects: next, isRunning });
 	};
 
 	/**
@@ -150,34 +155,34 @@ const useItemsState = (): ItemsStateContextValue => {
 		if (kind === 'mock-response') {
 			const next = mockResponses.filter((item) => item.id !== id);
 			setMockResponses(next);
-			persist({ mockResponses: next, httpRules, isRunning });
+			persist({ mockResponses: next, redirects, isRunning });
 			return;
 		}
-		const next = httpRules.filter((item) => item.id !== id);
-		setHttpRules(next);
-		persist({ mockResponses, httpRules: next, isRunning });
+		const next = redirects.filter((item) => item.id !== id);
+		setRedirects(next);
+		persist({ mockResponses, redirects: next, isRunning });
 	};
 
 	/**
-	 * Replaces mock responses and/or HTTP rules wholesale (used by import). Each list is left
-	 * untouched when its argument is omitted, rather than being cleared.
+	 * Replaces mock responses and/or redirect rules wholesale (used by import). Each list is
+	 * left untouched when its argument is omitted, rather than being cleared.
 	 *
 	 * @param nextMockResponses - The full replacement list, or omit to leave mock responses as-is.
-	 * @param nextHttpRules - The full replacement list, or omit to leave HTTP rules as-is.
+	 * @param nextRedirects - The full replacement list, or omit to leave redirects as-is.
 	 */
 	const replaceItems = (
 		nextMockResponses?: MockResponseItem[],
-		nextHttpRules?: HttpRuleItem[],
+		nextRedirects?: RedirectRuleItem[],
 	) => {
 		const resolvedMockResponses = nextMockResponses ?? mockResponses;
-		const resolvedHttpRules = nextHttpRules ?? httpRules;
+		const resolvedRedirects = nextRedirects ?? redirects;
 		if (nextMockResponses !== undefined) {
 			setMockResponses(nextMockResponses);
 		}
-		if (nextHttpRules !== undefined) {
-			setHttpRules(nextHttpRules);
+		if (nextRedirects !== undefined) {
+			setRedirects(nextRedirects);
 		}
-		persist({ mockResponses: resolvedMockResponses, httpRules: resolvedHttpRules, isRunning });
+		persist({ mockResponses: resolvedMockResponses, redirects: resolvedRedirects, isRunning });
 	};
 
 	/**
@@ -195,7 +200,7 @@ const useItemsState = (): ItemsStateContextValue => {
 						index === existingIndex ? item : existing,
 					);
 		setMockResponses(next);
-		persist({ mockResponses: next, httpRules, isRunning });
+		persist({ mockResponses: next, redirects, isRunning });
 	};
 
 	/**
@@ -205,12 +210,12 @@ const useItemsState = (): ItemsStateContextValue => {
 	 */
 	const setRunning = (running: boolean) => {
 		setIsRunning(running);
-		persist({ mockResponses, httpRules, isRunning: running });
+		persist({ mockResponses, redirects, isRunning: running });
 	};
 
 	return {
 		mockResponses,
-		httpRules,
+		redirects,
 		isRunning,
 		hasHydrated,
 		setRunning,

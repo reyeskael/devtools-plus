@@ -5,7 +5,7 @@ import {
 	ItemsStateContext,
 	type ItemsStateContextValue,
 } from '../../shared/context/ItemsStateContext';
-import type { HttpRuleItem, MockResponseItem } from '../../shared/items/types';
+import type { MockResponseItem, RedirectRuleItem } from '../../shared/items/types';
 
 jest.mock('../../shared/chrome/openApp', () => ({
 	openApp: jest.fn(),
@@ -29,19 +29,20 @@ const mockResponse: MockResponseItem = {
 	statusCode: 200,
 };
 
-const httpRule: HttpRuleItem = {
+const redirect: RedirectRuleItem = {
 	id: 'hr-1',
 	name: 'Block analytics',
-	kind: 'http-rule',
+	kind: 'redirect',
 	enabled: true,
-	action: 'block',
+	matchType: 'wildcard',
 	urlPattern: '/analytics',
+	destination: '/blocked',
 };
 
 interface RenderOverrides {
 	page?: AppPage;
 	mockResponses?: MockResponseItem[];
-	httpRules?: HttpRuleItem[];
+	redirects?: RedirectRuleItem[];
 	replaceItems?: jest.Mock;
 }
 
@@ -49,7 +50,7 @@ const buildItemsState = (
 	overrides: Partial<ItemsStateContextValue> = {},
 ): ItemsStateContextValue => ({
 	mockResponses: [mockResponse],
-	httpRules: [httpRule],
+	redirects: [redirect],
 	isRunning: true,
 	hasHydrated: true,
 	setRunning: jest.fn(),
@@ -64,7 +65,7 @@ const renderToolbar = (overrides: RenderOverrides = {}) => {
 	const page = overrides.page ?? 'mock-api';
 	const itemsState = buildItemsState({
 		...(overrides.mockResponses !== undefined && { mockResponses: overrides.mockResponses }),
-		...(overrides.httpRules !== undefined && { httpRules: overrides.httpRules }),
+		...(overrides.redirects !== undefined && { redirects: overrides.redirects }),
 		...(overrides.replaceItems !== undefined && { replaceItems: overrides.replaceItems }),
 	});
 	render(
@@ -112,7 +113,7 @@ describe('PanelToolbar', () => {
 		expect(downloadJson).toHaveBeenCalledTimes(1);
 		const [filename, payload] = (downloadJson as jest.Mock).mock.calls[0];
 		expect(filename).toMatch(/^devtools-plus-items-\d{4}-\d{2}-\d{2}\.json$/);
-		expect(JSON.parse(payload as string)).toEqual([mockResponse, httpRule]);
+		expect(JSON.parse(payload as string)).toEqual([mockResponse, redirect]);
 	});
 
 	it('clicking Import opens the import dialog, without triggering Export', async () => {
@@ -143,7 +144,7 @@ describe('PanelToolbar', () => {
 			undefined,
 		);
 		expect(
-			await screen.findByText('Imported 1 mock responses, 0 HTTP rules'),
+			await screen.findByText('Imported 1 mock responses, 0 redirects'),
 		).toBeInTheDocument();
 		await waitFor(() => {
 			expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

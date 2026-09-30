@@ -28,13 +28,13 @@ interface PanelToolbarProps {
  * @returns The panel toolbar UI.
  */
 export const PanelToolbar = ({ page }: PanelToolbarProps) => {
-	const { mockResponses, httpRules, replaceItems } = useItemsStateContext();
+	const { mockResponses, redirects, replaceItems } = useItemsStateContext();
 	const [importDialogOpen, setImportDialogOpen] = useState(false);
 	const [feedback, setFeedback] = useState<ImportFeedback | null>(null);
 
-	/** Downloads every mock response and HTTP rule as one dated `.json` export file. */
+	/** Downloads every mock response and redirect rule as one dated `.json` export file. */
 	const handleExport = () => {
-		const allItems: PopupItem[] = [...mockResponses, ...httpRules];
+		const allItems: PopupItem[] = [...mockResponses, ...redirects];
 		downloadJson(buildExportFilename(), toExportPayload(allItems));
 	};
 
@@ -52,11 +52,11 @@ export const PanelToolbar = ({ page }: PanelToolbarProps) => {
 		}
 		replaceItems(
 			result.mockResponses.length > 0 ? result.mockResponses : undefined,
-			result.httpRules.length > 0 ? result.httpRules : undefined,
+			result.redirects.length > 0 ? result.redirects : undefined,
 		);
 		setFeedback({
 			severity: 'success',
-			message: `Imported ${result.mockResponses.length} mock responses, ${result.httpRules.length} HTTP rules`,
+			message: `Imported ${result.mockResponses.length} mock responses, ${result.redirects.length} redirects`,
 		});
 		setImportDialogOpen(false);
 	};

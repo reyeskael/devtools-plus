@@ -44,7 +44,7 @@ const existingItem: MockResponseItem = {
 
 const seedStorage = (mockResponses: MockResponseItem[] = []) => {
 	chrome.storage.local.set({
-		[STORAGE_KEY]: { mockResponses, httpRules: [], isRunning: true },
+		[STORAGE_KEY]: { mockResponses, redirects: [], isRunning: true },
 	});
 };
 

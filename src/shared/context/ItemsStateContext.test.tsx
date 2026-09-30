@@ -1,7 +1,6 @@
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
-import { seedHttpRules } from '../items/seedItems';
 import { ItemsStateProvider, useItemsStateContext } from './ItemsStateContext';
-import type { HttpRuleItem, MockResponseItem } from '../items/types';
+import type { RedirectRuleItem, MockResponseItem } from '../items/types';
 
 const STORAGE_KEY = 'popupItemsState';
 
@@ -30,29 +29,30 @@ const fixtureMockResponses: MockResponseItem[] = [
 	},
 ];
 
-const fixtureHttpRules: HttpRuleItem[] = [
+const fixtureRedirects: RedirectRuleItem[] = [
 	{
 		id: 'hr-1',
 		name: 'Block ads',
-		kind: 'http-rule',
+		kind: 'redirect',
 		enabled: true,
+		matchType: 'wildcard',
 		urlPattern: '/ads/*',
-		action: 'block',
+		destination: '/blocked',
 	},
 	{
 		id: 'hr-2',
 		name: 'Redirect old',
-		kind: 'http-rule',
+		kind: 'redirect',
 		enabled: false,
+		matchType: 'wildcard',
 		urlPattern: '/old',
-		action: 'redirect',
-		target: '/new',
+		destination: '/new',
 	},
 ];
 
 interface StoredOverrides {
 	mockResponses?: MockResponseItem[];
-	httpRules?: HttpRuleItem[];
+	redirects?: RedirectRuleItem[];
 	isRunning?: boolean;
 }
 
@@ -64,7 +64,7 @@ const seedStorage = (overrides: StoredOverrides = {}) => {
 	chrome.storage.local.set({
 		[STORAGE_KEY]: {
 			mockResponses: fixtureMockResponses,
-			httpRules: fixtureHttpRules,
+			redirects: fixtureRedirects,
 			isRunning: true,
 			...overrides,
 		},
@@ -80,7 +80,7 @@ describe('ItemsStateContext', () => {
 
 		expect(result.current.isRunning).toBe(true);
 		expect(result.current.mockResponses).toEqual([]);
-		expect(result.current.httpRules).toEqual(seedHttpRules);
+		expect(result.current.redirects).toEqual([]);
 	});
 
 	it("hasHydrated starts false and flips true once the mount effect's chrome.storage.local.get callback fires", async () => {
@@ -111,8 +111,8 @@ describe('ItemsStateContext', () => {
 		expect(JSON.parse(JSON.stringify(result.current.mockResponses))).toEqual(
 			result.current.mockResponses,
 		);
-		expect(JSON.parse(JSON.stringify(result.current.httpRules))).toEqual(
-			result.current.httpRules,
+		expect(JSON.parse(JSON.stringify(result.current.redirects))).toEqual(
+			result.current.redirects,
 		);
 	});
 
@@ -120,7 +120,7 @@ describe('ItemsStateContext', () => {
 		seedStorage();
 		const { result } = renderItemsState();
 		const [first, second] = result.current.mockResponses;
-		const httpRulesBefore = result.current.httpRules;
+		const redirectsBefore = result.current.redirects;
 
 		act(() => {
 			result.current.toggleItem('mock-response', first.id);
@@ -132,23 +132,23 @@ describe('ItemsStateContext', () => {
 		expect(result.current.mockResponses.find((item) => item.id === second.id)?.enabled).toBe(
 			second.enabled,
 		);
-		expect(result.current.httpRules).toEqual(httpRulesBefore);
+		expect(result.current.redirects).toEqual(redirectsBefore);
 	});
 
-	it("toggleItem('http-rule', id) flips only the targeted http rule's enabled flag", () => {
+	it("toggleItem('redirect', id) flips only the targeted http rule's enabled flag", () => {
 		seedStorage();
 		const { result } = renderItemsState();
-		const [first, second] = result.current.httpRules;
+		const [first, second] = result.current.redirects;
 		const mockResponsesBefore = result.current.mockResponses;
 
 		act(() => {
-			result.current.toggleItem('http-rule', first.id);
+			result.current.toggleItem('redirect', first.id);
 		});
 
-		expect(result.current.httpRules.find((item) => item.id === first.id)?.enabled).toBe(
+		expect(result.current.redirects.find((item) => item.id === first.id)?.enabled).toBe(
 			!first.enabled,
 		);
-		expect(result.current.httpRules.find((item) => item.id === second.id)?.enabled).toBe(
+		expect(result.current.redirects.find((item) => item.id === second.id)?.enabled).toBe(
 			second.enabled,
 		);
 		expect(result.current.mockResponses).toEqual(mockResponsesBefore);
@@ -158,7 +158,7 @@ describe('ItemsStateContext', () => {
 		seedStorage();
 		const { result } = renderItemsState();
 		const [first] = result.current.mockResponses;
-		const httpRulesBefore = result.current.httpRules;
+		const redirectsBefore = result.current.redirects;
 
 		act(() => {
 			result.current.removeItem('mock-response', first.id);
@@ -166,21 +166,21 @@ describe('ItemsStateContext', () => {
 
 		expect(result.current.mockResponses.find((item) => item.id === first.id)).toBeUndefined();
 		expect(result.current.mockResponses).toHaveLength(fixtureMockResponses.length - 1);
-		expect(result.current.httpRules).toEqual(httpRulesBefore);
+		expect(result.current.redirects).toEqual(redirectsBefore);
 	});
 
-	it("removeItem('http-rule', id) removes only that item from httpRules", () => {
+	it("removeItem('redirect', id) removes only that item from redirects", () => {
 		seedStorage();
 		const { result } = renderItemsState();
-		const [first] = result.current.httpRules;
+		const [first] = result.current.redirects;
 		const mockResponsesBefore = result.current.mockResponses;
 
 		act(() => {
-			result.current.removeItem('http-rule', first.id);
+			result.current.removeItem('redirect', first.id);
 		});
 
-		expect(result.current.httpRules.find((item) => item.id === first.id)).toBeUndefined();
-		expect(result.current.httpRules).toHaveLength(fixtureHttpRules.length - 1);
+		expect(result.current.redirects.find((item) => item.id === first.id)).toBeUndefined();
+		expect(result.current.redirects).toHaveLength(fixtureRedirects.length - 1);
 		expect(result.current.mockResponses).toEqual(mockResponsesBefore);
 	});
 
@@ -195,10 +195,10 @@ describe('ItemsStateContext', () => {
 	});
 
 	describe('replaceItems', () => {
-		it('replacing only mockResponses leaves httpRules untouched', () => {
+		it('replacing only mockResponses leaves redirects untouched', () => {
 			seedStorage();
 			const { result } = renderItemsState();
-			const httpRulesBefore = result.current.httpRules;
+			const redirectsBefore = result.current.redirects;
 			const nextMockResponses: MockResponseItem[] = [
 				{
 					id: 'imported-1',
@@ -216,21 +216,22 @@ describe('ItemsStateContext', () => {
 			});
 
 			expect(result.current.mockResponses).toEqual(nextMockResponses);
-			expect(result.current.httpRules).toEqual(httpRulesBefore);
+			expect(result.current.redirects).toEqual(redirectsBefore);
 		});
 
-		it('replacing only httpRules leaves mockResponses untouched', () => {
+		it('replacing only redirects leaves mockResponses untouched', () => {
 			seedStorage();
 			const { result } = renderItemsState();
 			const mockResponsesBefore = result.current.mockResponses;
-			const nextHttpRules: HttpRuleItem[] = [
+			const nextHttpRules: RedirectRuleItem[] = [
 				{
 					id: 'imported-rule-1',
 					name: 'Imported rule',
-					kind: 'http-rule',
+					kind: 'redirect',
 					enabled: true,
+					matchType: 'wildcard',
 					urlPattern: '/imported/*',
-					action: 'block',
+					destination: '/blocked',
 				},
 			];
 
@@ -238,11 +239,11 @@ describe('ItemsStateContext', () => {
 				result.current.replaceItems(undefined, nextHttpRules);
 			});
 
-			expect(result.current.httpRules).toEqual(nextHttpRules);
+			expect(result.current.redirects).toEqual(nextHttpRules);
 			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
 		});
 
-		it('replaces both mockResponses and httpRules at once', () => {
+		it('replaces both mockResponses and redirects at once', () => {
 			seedStorage();
 			const { result } = renderItemsState();
 			const nextMockResponses: MockResponseItem[] = [
@@ -256,15 +257,15 @@ describe('ItemsStateContext', () => {
 					statusCode: 204,
 				},
 			];
-			const nextHttpRules: HttpRuleItem[] = [
+			const nextHttpRules: RedirectRuleItem[] = [
 				{
 					id: 'imported-rule-2',
 					name: 'Imported rule 2',
-					kind: 'http-rule',
+					kind: 'redirect',
 					enabled: false,
+					matchType: 'wildcard',
 					urlPattern: '/imported2/*',
-					action: 'redirect',
-					target: '/target',
+					destination: '/target',
 				},
 			];
 
@@ -273,21 +274,21 @@ describe('ItemsStateContext', () => {
 			});
 
 			expect(result.current.mockResponses).toEqual(nextMockResponses);
-			expect(result.current.httpRules).toEqual(nextHttpRules);
+			expect(result.current.redirects).toEqual(nextHttpRules);
 		});
 
 		it('passing undefined for both arguments leaves both lists exactly as they were', () => {
 			seedStorage();
 			const { result } = renderItemsState();
 			const mockResponsesBefore = result.current.mockResponses;
-			const httpRulesBefore = result.current.httpRules;
+			const redirectsBefore = result.current.redirects;
 
 			act(() => {
 				result.current.replaceItems(undefined, undefined);
 			});
 
 			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
-			expect(result.current.httpRules).toEqual(httpRulesBefore);
+			expect(result.current.redirects).toEqual(redirectsBefore);
 		});
 
 		it('persists a replaceItems call to chrome.storage.local after hydration', () => {
@@ -312,7 +313,7 @@ describe('ItemsStateContext', () => {
 			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
 				[STORAGE_KEY]: {
 					mockResponses: nextMockResponses,
-					httpRules: result.current.httpRules,
+					redirects: result.current.redirects,
 					isRunning: true,
 				},
 			});
@@ -320,10 +321,10 @@ describe('ItemsStateContext', () => {
 	});
 
 	describe('upsertMockResponse', () => {
-		it('appends a new item (id not present) to the end, leaving existing items and httpRules untouched', () => {
+		it('appends a new item (id not present) to the end, leaving existing items and redirects untouched', () => {
 			seedStorage();
 			const { result } = renderItemsState();
-			const httpRulesBefore = result.current.httpRules;
+			const redirectsBefore = result.current.redirects;
 			const newItem: MockResponseItem = {
 				id: 'mr-3',
 				name: 'Delete user',
@@ -343,7 +344,7 @@ describe('ItemsStateContext', () => {
 				fixtureMockResponses,
 			);
 			expect(result.current.mockResponses[fixtureMockResponses.length]).toEqual(newItem);
-			expect(result.current.httpRules).toEqual(httpRulesBefore);
+			expect(result.current.redirects).toEqual(redirectsBefore);
 		});
 
 		it('replaces an existing item (matching id) in place, keeping the same length and position', () => {
@@ -384,7 +385,7 @@ describe('ItemsStateContext', () => {
 			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
 				[STORAGE_KEY]: {
 					mockResponses: result.current.mockResponses,
-					httpRules: result.current.httpRules,
+					redirects: result.current.redirects,
 					isRunning: true,
 				},
 			});
@@ -392,7 +393,7 @@ describe('ItemsStateContext', () => {
 	});
 
 	describe('external chrome.storage.onChanged (cross-instance)', () => {
-		it('applies a genuinely external change (written by a second, independently mounted instance) to mockResponses, httpRules, and isRunning', () => {
+		it('applies a genuinely external change (written by a second, independently mounted instance) to mockResponses, redirects, and isRunning', () => {
 			seedStorage();
 			const instanceA = renderItemsState();
 			const instanceB = renderItemsState();
@@ -407,19 +408,20 @@ describe('ItemsStateContext', () => {
 					statusCode: 200,
 				},
 			];
-			const externalHttpRules: HttpRuleItem[] = [
+			const externalHttpRules: RedirectRuleItem[] = [
 				{
 					id: 'external-rule-1',
 					name: 'External rule',
-					kind: 'http-rule',
+					kind: 'redirect',
 					enabled: true,
+					matchType: 'wildcard',
 					urlPattern: '/external/*',
-					action: 'block',
+					destination: '/blocked',
 				},
 			];
 
 			// Two separate act() calls so instanceA's closure has already re-rendered with the
-			// replaceItems result before setRunning reads mockResponses/httpRules off it — otherwise
+			// replaceItems result before setRunning reads mockResponses/redirects off it — otherwise
 			// setRunning would persist the stale pre-replaceItems lists.
 			act(() => {
 				instanceA.result.current.replaceItems(externalMockResponses, externalHttpRules);
@@ -429,7 +431,7 @@ describe('ItemsStateContext', () => {
 			});
 
 			expect(instanceB.result.current.mockResponses).toEqual(externalMockResponses);
-			expect(instanceB.result.current.httpRules).toEqual(externalHttpRules);
+			expect(instanceB.result.current.redirects).toEqual(externalHttpRules);
 			expect(instanceB.result.current.isRunning).toBe(false);
 		});
 
@@ -467,7 +469,7 @@ describe('ItemsStateContext', () => {
 			const { result } = renderItemsState();
 			const listener = (chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
 			const mockResponsesBefore = result.current.mockResponses;
-			const httpRulesBefore = result.current.httpRules;
+			const redirectsBefore = result.current.redirects;
 			const isRunningBefore = result.current.isRunning;
 
 			act(() => {
@@ -476,7 +478,7 @@ describe('ItemsStateContext', () => {
 						[STORAGE_KEY]: {
 							newValue: {
 								mockResponses: [],
-								httpRules: [],
+								redirects: [],
 								isRunning: false,
 							},
 							oldValue: undefined,
@@ -487,7 +489,7 @@ describe('ItemsStateContext', () => {
 			});
 
 			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
-			expect(result.current.httpRules).toEqual(httpRulesBefore);
+			expect(result.current.redirects).toEqual(redirectsBefore);
 			expect(result.current.isRunning).toBe(isRunningBefore);
 		});
 
@@ -496,7 +498,7 @@ describe('ItemsStateContext', () => {
 			const { result } = renderItemsState();
 			const listener = (chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
 			const mockResponsesBefore = result.current.mockResponses;
-			const httpRulesBefore = result.current.httpRules;
+			const redirectsBefore = result.current.redirects;
 			const isRunningBefore = result.current.isRunning;
 
 			act(() => {
@@ -512,7 +514,7 @@ describe('ItemsStateContext', () => {
 			});
 
 			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
-			expect(result.current.httpRules).toEqual(httpRulesBefore);
+			expect(result.current.redirects).toEqual(redirectsBefore);
 			expect(result.current.isRunning).toBe(isRunningBefore);
 		});
 
@@ -521,7 +523,7 @@ describe('ItemsStateContext', () => {
 			const { result } = renderItemsState();
 			const listener = (chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
 			const mockResponsesBefore = result.current.mockResponses;
-			const httpRulesBefore = result.current.httpRules;
+			const redirectsBefore = result.current.redirects;
 			const isRunningBefore = result.current.isRunning;
 
 			act(() => {
@@ -531,7 +533,7 @@ describe('ItemsStateContext', () => {
 							newValue: undefined,
 							oldValue: {
 								mockResponses: fixtureMockResponses,
-								httpRules: fixtureHttpRules,
+								redirects: fixtureRedirects,
 								isRunning: true,
 							},
 						},
@@ -541,7 +543,7 @@ describe('ItemsStateContext', () => {
 			});
 
 			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
-			expect(result.current.httpRules).toEqual(httpRulesBefore);
+			expect(result.current.redirects).toEqual(redirectsBefore);
 			expect(result.current.isRunning).toBe(isRunningBefore);
 		});
 	});
@@ -559,19 +561,19 @@ describe('ItemsStateContext', () => {
 
 			expect(result.current.isRunning).toBe(true);
 			expect(result.current.mockResponses).toEqual([]);
-			expect(result.current.httpRules).toEqual(seedHttpRules);
+			expect(result.current.redirects).toEqual([]);
 		});
 
-		it('hydrates mockResponses, httpRules, and isRunning from previously persisted storage on mount', async () => {
+		it('hydrates mockResponses, redirects, and isRunning from previously persisted storage on mount', async () => {
 			const persistedMockResponses = fixtureMockResponses.map((item, index) =>
 				index === 0 ? { ...item, enabled: !item.enabled } : item,
 			);
-			const persistedHttpRules = fixtureHttpRules.map((item, index) =>
+			const persistedRedirects = fixtureRedirects.map((item, index) =>
 				index === 0 ? { ...item, enabled: !item.enabled } : item,
 			);
 			seedStorage({
 				mockResponses: persistedMockResponses,
-				httpRules: persistedHttpRules,
+				redirects: persistedRedirects,
 				isRunning: false,
 			});
 
@@ -581,7 +583,7 @@ describe('ItemsStateContext', () => {
 				expect(result.current.isRunning).toBe(false);
 			});
 			expect(result.current.mockResponses).toEqual(persistedMockResponses);
-			expect(result.current.httpRules).toEqual(persistedHttpRules);
+			expect(result.current.redirects).toEqual(persistedRedirects);
 		});
 
 		it('leaves storage holding the seeded value (not the in-memory defaults) once mount settles', () => {
@@ -590,7 +592,7 @@ describe('ItemsStateContext', () => {
 			// until hydration's setState has already landed, so no set() call with
 			// defaults ever fires. This jest stub's get() resolves synchronously
 			// inside the same effect-flush pass, so the persist effect can run once
-			// with the old default mockResponses/httpRules/isRunning before the
+			// with the old default mockResponses/redirects/isRunning before the
 			// hydrated state commits, producing an extra (harmless, self-correcting)
 			// set() call with defaults. Rather than assert set() is never called —
 			// which is only true under a genuinely async callback and would be a
@@ -600,12 +602,12 @@ describe('ItemsStateContext', () => {
 			const persistedMockResponses = fixtureMockResponses.map((item, index) =>
 				index === 0 ? { ...item, enabled: !item.enabled } : item,
 			);
-			const persistedHttpRules = fixtureHttpRules.map((item, index) =>
+			const persistedRedirects = fixtureRedirects.map((item, index) =>
 				index === 0 ? { ...item, enabled: !item.enabled } : item,
 			);
 			seedStorage({
 				mockResponses: persistedMockResponses,
-				httpRules: persistedHttpRules,
+				redirects: persistedRedirects,
 				isRunning: false,
 			});
 
@@ -618,7 +620,7 @@ describe('ItemsStateContext', () => {
 
 			expect(stored).toEqual({
 				mockResponses: persistedMockResponses,
-				httpRules: persistedHttpRules,
+				redirects: persistedRedirects,
 				isRunning: false,
 			});
 		});
@@ -634,24 +636,24 @@ describe('ItemsStateContext', () => {
 			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
 				[STORAGE_KEY]: {
 					mockResponses: result.current.mockResponses,
-					httpRules: result.current.httpRules,
+					redirects: result.current.redirects,
 					isRunning: true,
 				},
 			});
 		});
 
-		it('persists http-rule toggles to chrome.storage.local after hydration', () => {
+		it('persists redirect toggles to chrome.storage.local after hydration', () => {
 			seedStorage();
 			const { result } = renderItemsState();
 
 			act(() => {
-				result.current.toggleItem('http-rule', fixtureHttpRules[1].id);
+				result.current.toggleItem('redirect', fixtureRedirects[1].id);
 			});
 
 			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
 				[STORAGE_KEY]: {
 					mockResponses: result.current.mockResponses,
-					httpRules: result.current.httpRules,
+					redirects: result.current.redirects,
 					isRunning: true,
 				},
 			});
@@ -668,7 +670,7 @@ describe('ItemsStateContext', () => {
 			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
 				[STORAGE_KEY]: {
 					mockResponses: result.current.mockResponses,
-					httpRules: result.current.httpRules,
+					redirects: result.current.redirects,
 					isRunning: true,
 				},
 			});
@@ -685,10 +687,91 @@ describe('ItemsStateContext', () => {
 			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
 				[STORAGE_KEY]: {
 					mockResponses: result.current.mockResponses,
-					httpRules: result.current.httpRules,
+					redirects: result.current.redirects,
 					isRunning: false,
 				},
 			});
+		});
+	});
+
+	describe('pre-rename storage compatibility (missing `redirects`)', () => {
+		it('hydrates redirects as [] on mount when persisted storage has no `redirects` key at all', async () => {
+			// Simulates data persisted by a pre-rename build (or any storage predating the
+			// `redirects` field) — no `redirects` key present, not even `undefined`.
+			chrome.storage.local.set({
+				[STORAGE_KEY]: {
+					mockResponses: fixtureMockResponses,
+					isRunning: true,
+				},
+			});
+
+			const { result } = renderItemsState();
+
+			await waitFor(() => {
+				expect(result.current.hasHydrated).toBe(true);
+			});
+			expect(result.current.redirects).toEqual([]);
+			expect(result.current.mockResponses).toEqual(fixtureMockResponses);
+			// The crash risk this guards: redirects must be an array, not undefined, since
+			// downstream code (e.g. getItemRows, toggleItem/removeItem for 'redirect') calls
+			// .map/.filter over it unconditionally.
+			expect(() => result.current.redirects.map((item) => item.id)).not.toThrow();
+		});
+
+		it('hydrates redirects as [] on mount when persisted storage has `redirects: undefined`', async () => {
+			chrome.storage.local.set({
+				[STORAGE_KEY]: {
+					mockResponses: fixtureMockResponses,
+					redirects: undefined,
+					isRunning: true,
+				},
+			});
+
+			const { result } = renderItemsState();
+
+			await waitFor(() => {
+				expect(result.current.hasHydrated).toBe(true);
+			});
+			expect(result.current.redirects).toEqual([]);
+		});
+
+		it('the storage.onChanged mirror path also defaults redirects to [] when the incoming value lacks `redirects`', () => {
+			seedStorage();
+			const { result } = renderItemsState();
+			const listener = (chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
+			const externalMockResponses: MockResponseItem[] = [
+				{
+					id: 'external-legacy-1',
+					name: 'External legacy mock',
+					kind: 'mock-response',
+					enabled: true,
+					method: 'GET',
+					urlPattern: '/external-legacy',
+					statusCode: 200,
+				},
+			];
+
+			act(() => {
+				listener(
+					{
+						[STORAGE_KEY]: {
+							// No `redirects` key — as if written by another mounted instance still
+							// running a pre-rename build, or any writer that omits the field.
+							newValue: {
+								mockResponses: externalMockResponses,
+								isRunning: false,
+							},
+							oldValue: undefined,
+						},
+					},
+					'local',
+				);
+			});
+
+			expect(result.current.redirects).toEqual([]);
+			expect(result.current.mockResponses).toEqual(externalMockResponses);
+			expect(result.current.isRunning).toBe(false);
+			expect(() => result.current.redirects.map((item) => item.id)).not.toThrow();
 		});
 	});
 

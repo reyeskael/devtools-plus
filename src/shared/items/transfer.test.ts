@@ -1,5 +1,5 @@
 import { parseImportedItems, toExportPayload } from './transfer';
-import type { HttpRuleItem, MockResponseItem, PopupItem } from './types';
+import type { MockResponseItem, PopupItem, RedirectRuleItem } from './types';
 import sampleMockResponses from './__fixtures__/sample-mock-responses.json';
 
 const validMockResponse: MockResponseItem = {
@@ -13,13 +13,14 @@ const validMockResponse: MockResponseItem = {
 	statusText: 'OK',
 };
 
-const validHttpRule: HttpRuleItem = {
+const validRedirect: RedirectRuleItem = {
 	id: 'rule-1',
 	name: 'Rule One',
-	kind: 'http-rule',
+	kind: 'redirect',
 	enabled: false,
+	matchType: 'wildcard',
 	urlPattern: '/api/b',
-	action: 'block',
+	destination: '/api/b-new',
 };
 
 const omit = <T extends object>(obj: T, key: keyof T): Record<string, unknown> => {
@@ -37,7 +38,7 @@ const expectFailure = (result: ReturnType<typeof parseImportedItems>): string =>
 };
 
 describe('toExportPayload', () => {
-	const items: PopupItem[] = [validMockResponse, validHttpRule];
+	const items: PopupItem[] = [validMockResponse, validRedirect];
 
 	it('indents with tabs', () => {
 		const payload = toExportPayload(items);
@@ -58,20 +59,20 @@ describe('toExportPayload', () => {
 
 describe('parseImportedItems', () => {
 	it('parses a valid mixed-kind array into the right buckets', () => {
-		const result = parseImportedItems(JSON.stringify([validMockResponse, validHttpRule]));
+		const result = parseImportedItems(JSON.stringify([validMockResponse, validRedirect]));
 
 		expect(result.ok).toBe(true);
 		if (!result.ok) {
 			throw new Error('expected parseImportedItems to succeed');
 		}
 		expect(result.mockResponses).toEqual([validMockResponse]);
-		expect(result.httpRules).toEqual([validHttpRule]);
+		expect(result.redirects).toEqual([validRedirect]);
 	});
 
 	it('accepts an empty array as valid, with both buckets empty', () => {
 		const result = parseImportedItems('[]');
 
-		expect(result).toEqual({ ok: true, mockResponses: [], httpRules: [] });
+		expect(result).toEqual({ ok: true, mockResponses: [], redirects: [] });
 	});
 
 	it('rejects text that is not valid JSON', () => {
@@ -136,14 +137,14 @@ describe('parseImportedItems', () => {
 			const error = expectFailure(
 				parseImportedItems(JSON.stringify([omit(validMockResponse, 'kind')])),
 			);
-			expect(error).toMatch(/"kind" must be "mock-response" or "http-rule"/);
+			expect(error).toMatch(/"kind" must be "mock-response" or "redirect"/);
 		});
 
 		it('rejects an invalid kind value', () => {
 			const error = expectFailure(
 				parseImportedItems(JSON.stringify([{ ...validMockResponse, kind: 'something-else' }])),
 			);
-			expect(error).toMatch(/"kind" must be "mock-response" or "http-rule"/);
+			expect(error).toMatch(/"kind" must be "mock-response" or "redirect"/);
 		});
 	});
 
@@ -212,52 +213,156 @@ describe('parseImportedItems', () => {
 		});
 	});
 
-	describe('http-rule field validation', () => {
+	describe('redirect field validation', () => {
+		it('rejects a missing matchType', () => {
+			const error = expectFailure(
+				parseImportedItems(JSON.stringify([omit(validRedirect, 'matchType')])),
+			);
+			expect(error).toMatch(/"matchType" must be one of/);
+		});
+
+		it('rejects an invalid matchType', () => {
+			const error = expectFailure(
+				parseImportedItems(JSON.stringify([{ ...validRedirect, matchType: 'glob' }])),
+			);
+			expect(error).toMatch(/"matchType" must be one of/);
+		});
+
+		it('accepts "regex" as a matchType', () => {
+			const result = parseImportedItems(
+				JSON.stringify([{ ...validRedirect, matchType: 'regex' }]),
+			);
+			expect(result.ok).toBe(true);
+		});
+
 		it('rejects a missing urlPattern', () => {
 			const error = expectFailure(
-				parseImportedItems(JSON.stringify([omit(validHttpRule, 'urlPattern')])),
+				parseImportedItems(JSON.stringify([omit(validRedirect, 'urlPattern')])),
 			);
 			expect(error).toMatch(/"urlPattern" must be a non-empty string/);
 		});
 
 		it('rejects a non-string urlPattern', () => {
 			const error = expectFailure(
-				parseImportedItems(JSON.stringify([{ ...validHttpRule, urlPattern: 42 }])),
+				parseImportedItems(JSON.stringify([{ ...validRedirect, urlPattern: 42 }])),
 			);
 			expect(error).toMatch(/"urlPattern" must be a non-empty string/);
 		});
 
 		it('rejects an empty-string urlPattern', () => {
 			const error = expectFailure(
-				parseImportedItems(JSON.stringify([{ ...validHttpRule, urlPattern: '' }])),
+				parseImportedItems(JSON.stringify([{ ...validRedirect, urlPattern: '' }])),
 			);
 			expect(error).toMatch(/"urlPattern" must be a non-empty string/);
 		});
 
-		it('rejects a missing action', () => {
+		it('rejects a missing destination', () => {
 			const error = expectFailure(
-				parseImportedItems(JSON.stringify([omit(validHttpRule, 'action')])),
+				parseImportedItems(JSON.stringify([omit(validRedirect, 'destination')])),
 			);
-			expect(error).toMatch(/"action" must be one of/);
+			expect(error).toMatch(/"destination" must be a non-empty string/);
 		});
 
-		it('rejects an invalid action', () => {
+		it('rejects an empty-string destination', () => {
 			const error = expectFailure(
-				parseImportedItems(JSON.stringify([{ ...validHttpRule, action: 'destroy' }])),
+				parseImportedItems(JSON.stringify([{ ...validRedirect, destination: '' }])),
 			);
-			expect(error).toMatch(/"action" must be one of/);
+			expect(error).toMatch(/"destination" must be a non-empty string/);
 		});
 
-		it('rejects a non-string target when present', () => {
+		it('rejects a non-array methods field', () => {
 			const error = expectFailure(
-				parseImportedItems(JSON.stringify([{ ...validHttpRule, target: 42 }])),
+				parseImportedItems(JSON.stringify([{ ...validRedirect, methods: 'GET' }])),
 			);
-			expect(error).toMatch(/"target" must be a string when present/);
+			expect(error).toMatch(/"methods" must be an array of/);
 		});
 
-		it('accepts an http-rule with no target at all', () => {
-			const result = parseImportedItems(JSON.stringify([validHttpRule]));
+		it('rejects a methods array containing an invalid method', () => {
+			const error = expectFailure(
+				parseImportedItems(JSON.stringify([{ ...validRedirect, methods: ['GET', 'FETCH'] }])),
+			);
+			expect(error).toMatch(/"methods" must be an array of/);
+		});
+
+		it('accepts a redirect with no methods at all (all methods)', () => {
+			const result = parseImportedItems(JSON.stringify([validRedirect]));
 			expect(result.ok).toBe(true);
+		});
+
+		it('accepts a redirect with an empty methods array (also "all methods")', () => {
+			const result = parseImportedItems(
+				JSON.stringify([{ ...validRedirect, methods: [] }]),
+			);
+			expect(result.ok).toBe(true);
+			if (!result.ok) {
+				throw new Error('expected parseImportedItems to succeed');
+			}
+			expect(result.redirects).toEqual([{ ...validRedirect, methods: [] }]);
+		});
+
+		it('accepts a redirect with a valid, non-empty methods list', () => {
+			const result = parseImportedItems(
+				JSON.stringify([{ ...validRedirect, methods: ['GET', 'POST'] }]),
+			);
+			expect(result.ok).toBe(true);
+		});
+	});
+
+	describe('legacy http-rule rejection', () => {
+		it('rejects an old-format entry with kind "http-rule" and action "block"', () => {
+			const legacyEntry = {
+				id: 'legacy-1',
+				name: 'Block legacy API',
+				kind: 'http-rule',
+				enabled: true,
+				urlPattern: '/api/legacy/*',
+				action: 'block',
+			};
+			const error = expectFailure(parseImportedItems(JSON.stringify([legacyEntry])));
+			expect(error).toMatch(/no longer supported/);
+			expect(error).toMatch(/http-rule/);
+		});
+
+		it('rejects an old-format entry with kind "http-rule" and action "redirect"', () => {
+			const legacyEntry = {
+				id: 'legacy-2',
+				name: 'Redirect old path',
+				kind: 'http-rule',
+				enabled: false,
+				urlPattern: '/old/path',
+				action: 'redirect',
+				target: '/new/path',
+			};
+			const error = expectFailure(parseImportedItems(JSON.stringify([legacyEntry])));
+			expect(error).toMatch(/no longer supported/);
+		});
+
+		it('rejects an old-format entry with kind "http-rule" and action "modify-headers"', () => {
+			const legacyEntry = {
+				id: 'legacy-3',
+				name: 'Strip auth header',
+				kind: 'http-rule',
+				enabled: true,
+				urlPattern: '/api/public/*',
+				action: 'modify-headers',
+			};
+			const error = expectFailure(parseImportedItems(JSON.stringify([legacyEntry])));
+			expect(error).toMatch(/no longer supported/);
+		});
+
+		it('aborts the whole parse when a legacy entry appears alongside otherwise-valid entries', () => {
+			const legacyEntry = {
+				id: 'legacy-4',
+				name: 'Block legacy API',
+				kind: 'http-rule',
+				enabled: true,
+				urlPattern: '/api/legacy/*',
+				action: 'block',
+			};
+			const result = parseImportedItems(
+				JSON.stringify([validMockResponse, legacyEntry, validRedirect]),
+			);
+			expect(result.ok).toBe(false);
 		});
 	});
 
@@ -271,8 +376,8 @@ describe('parseImportedItems', () => {
 
 		it('rejects a duplicate id across the two different kinds', () => {
 			const mockEntry = { ...validMockResponse, id: 'shared-id' };
-			const ruleEntry = { ...validHttpRule, id: 'shared-id' };
-			const error = expectFailure(parseImportedItems(JSON.stringify([mockEntry, ruleEntry])));
+			const redirectEntry = { ...validRedirect, id: 'shared-id' };
+			const error = expectFailure(parseImportedItems(JSON.stringify([mockEntry, redirectEntry])));
 			expect(error).toMatch(/duplicate id "shared-id"/);
 		});
 	});
@@ -280,7 +385,7 @@ describe('parseImportedItems', () => {
 	describe('all-or-nothing validation', () => {
 		it('aborts the whole parse on the first invalid entry, returning nothing partial', () => {
 			const result = parseImportedItems(
-				JSON.stringify([validMockResponse, { ...validHttpRule, action: 'bogus' }]),
+				JSON.stringify([validMockResponse, { ...validRedirect, matchType: 'bogus' }]),
 			);
 			expect(result.ok).toBe(false);
 		});
@@ -295,6 +400,18 @@ describe('parseImportedItems', () => {
 			throw new Error('expected parseImportedItems to succeed');
 		}
 		expect(result.mockResponses).toEqual(sampleMockResponses);
-		expect(result.httpRules).toEqual([]);
+		expect(result.redirects).toEqual([]);
+	});
+
+	it('round-trips a redirect item through export then re-import', () => {
+		const payload = toExportPayload([validRedirect]);
+		const result = parseImportedItems(payload);
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			throw new Error('expected parseImportedItems to succeed');
+		}
+		expect(result.redirects).toEqual([validRedirect]);
+		expect(result.mockResponses).toEqual([]);
 	});
 });

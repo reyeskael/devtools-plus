@@ -30,17 +30,23 @@ export interface MockResponseItem extends PopupItemBase {
 	body?: unknown;
 }
 
+/** How a redirect rule's `urlPattern` is interpreted when matching a request URL. */
+export type RedirectMatchType = 'wildcard' | 'regex';
+
 /**
- * An HTTP rule (block / redirect / modify-headers) targeting requests whose URL matches
- * `urlPattern`. Listed in the popup but not yet enforced — intended to be built on
+ * A redirect rule: when a request URL matches `urlPattern` (as a wildcard or regex pattern,
+ * per `matchType`), the request is sent to `destination` instead. Enforced via
  * `chrome.declarativeNetRequest`, per the repo's CLAUDE.md.
  */
-export interface HttpRuleItem extends PopupItemBase {
-	kind: 'http-rule';
+export interface RedirectRuleItem extends PopupItemBase {
+	kind: 'redirect';
+	matchType: RedirectMatchType;
 	urlPattern: string;
-	action: 'block' | 'redirect' | 'modify-headers';
-	target?: string;
+	/** A static destination URL, or a template with `$1`..`$9` capture-group refs (`$$` escapes a literal `$`). */
+	destination: string;
+	/** HTTP methods this rule applies to. Omitted or empty means "all methods". */
+	methods?: HttpMethod[];
 }
 
 /** Either kind of popup item, discriminated by `kind`. */
-export type PopupItem = MockResponseItem | HttpRuleItem;
+export type PopupItem = MockResponseItem | RedirectRuleItem;

@@ -16,7 +16,7 @@ const buildItemsState = (
 	overrides: Partial<ItemsStateContextValue> = {},
 ): ItemsStateContextValue => ({
 	mockResponses: [],
-	httpRules: [],
+	redirects: [],
 	isRunning: false,
 	hasHydrated: true,
 	setRunning: jest.fn(),
