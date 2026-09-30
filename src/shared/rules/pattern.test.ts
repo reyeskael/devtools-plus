@@ -1,4 +1,4 @@
-import { dollarRefsToBackslash, escapeRegExp, wildcardToRegex } from './pattern';
+import { dollarRefsToBackslash, escapeRegExp, hasCaptureRef, wildcardToRegex } from './pattern';
 
 describe('escapeRegExp', () => {
 	it('escapes every regex-special character', () => {
@@ -100,5 +100,27 @@ describe('dollarRefsToBackslash', () => {
 		// leaving "$10" untouched. There is no two-digit capture-ref syntax to begin with (DNR's
 		// regexSubstitution only supports \1-\9), so this is the documented, not corrected, behavior.
 		expect(dollarRefsToBackslash('$10')).toBe('\\10');
+	});
+});
+
+describe('hasCaptureRef', () => {
+	it('returns true for a plain $1-$9 ref', () => {
+		expect(hasCaptureRef('https://localhost:3000/$1')).toBe(true);
+	});
+
+	it('returns false when there is no "$" at all', () => {
+		expect(hasCaptureRef('https://localhost:3000/static')).toBe(false);
+	});
+
+	it('returns false for a lone "$$" with no adjacent digit', () => {
+		expect(hasCaptureRef('?ref=$$order')).toBe(false);
+	});
+
+	it('returns false for "$$100", the escaped-literal-$ case a naive /\\$[1-9]/ test misdetects', () => {
+		expect(hasCaptureRef('?amount=$$100')).toBe(false);
+	});
+
+	it('returns true for a real ref that follows an escape, e.g. "$$abc$1"', () => {
+		expect(hasCaptureRef('$$abc$1')).toBe(true);
 	});
 });
