@@ -392,6 +392,78 @@ describe('ItemsStateContext', () => {
 		});
 	});
 
+	describe('upsertRedirect', () => {
+		it('appends a new item (id not present) to the end, leaving existing items and mockResponses untouched', () => {
+			seedStorage();
+			const { result } = renderItemsState();
+			const mockResponsesBefore = result.current.mockResponses;
+			const newItem: RedirectRuleItem = {
+				id: 'hr-3',
+				name: 'Redirect new',
+				kind: 'redirect',
+				enabled: true,
+				matchType: 'wildcard',
+				urlPattern: '/new/*',
+				destination: '/blocked-new',
+			};
+
+			act(() => {
+				result.current.upsertRedirect(newItem);
+			});
+
+			expect(result.current.redirects).toHaveLength(fixtureRedirects.length + 1);
+			expect(result.current.redirects.slice(0, fixtureRedirects.length)).toEqual(
+				fixtureRedirects,
+			);
+			expect(result.current.redirects[fixtureRedirects.length]).toEqual(newItem);
+			expect(result.current.mockResponses).toEqual(mockResponsesBefore);
+		});
+
+		it('replaces an existing item (matching id) in place, keeping the same length and position', () => {
+			seedStorage();
+			const { result } = renderItemsState();
+			const updatedItem: RedirectRuleItem = {
+				...fixtureRedirects[0],
+				name: 'Block ads (updated)',
+				destination: '/blocked-updated',
+			};
+
+			act(() => {
+				result.current.upsertRedirect(updatedItem);
+			});
+
+			expect(result.current.redirects).toHaveLength(fixtureRedirects.length);
+			expect(result.current.redirects[0]).toEqual(updatedItem);
+			expect(result.current.redirects[1]).toEqual(fixtureRedirects[1]);
+		});
+
+		it('persists an upsertRedirect call to chrome.storage.local after hydration', () => {
+			seedStorage();
+			const { result } = renderItemsState();
+			const newItem: RedirectRuleItem = {
+				id: 'hr-3',
+				name: 'Redirect new',
+				kind: 'redirect',
+				enabled: true,
+				matchType: 'wildcard',
+				urlPattern: '/new/*',
+				destination: '/blocked-new',
+			};
+
+			act(() => {
+				result.current.upsertRedirect(newItem);
+			});
+
+			expect(chrome.storage.local.set).toHaveBeenLastCalledWith({
+				[STORAGE_KEY]: {
+					mockResponses: result.current.mockResponses,
+					redirects: result.current.redirects,
+					isRunning: true,
+				},
+			});
+		});
+	});
+
 	describe('external chrome.storage.onChanged (cross-instance)', () => {
 		it('applies a genuinely external change (written by a second, independently mounted instance) to mockResponses, redirects, and isRunning', () => {
 			seedStorage();

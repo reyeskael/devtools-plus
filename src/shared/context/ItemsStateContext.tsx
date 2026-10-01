@@ -25,6 +25,7 @@ export interface ItemsStateContextValue {
 	removeItem: (kind: PopupItem['kind'], id: string) => void;
 	replaceItems: (mockResponses?: MockResponseItem[], redirects?: RedirectRuleItem[]) => void;
 	upsertMockResponse: (item: MockResponseItem) => void;
+	upsertRedirect: (item: RedirectRuleItem) => void;
 }
 
 /**
@@ -204,6 +205,22 @@ const useItemsState = (): ItemsStateContextValue => {
 	};
 
 	/**
+	 * Replaces the redirect rule with the same id as `item`, or appends it if no such item
+	 * exists yet.
+	 *
+	 * @param item - The redirect rule to insert or replace.
+	 */
+	const upsertRedirect = (item: RedirectRuleItem) => {
+		const existingIndex = redirects.findIndex((existing) => existing.id === item.id);
+		const next =
+			existingIndex === -1
+				? [...redirects, item]
+				: redirects.map((existing, index) => (index === existingIndex ? item : existing));
+		setRedirects(next);
+		persist({ mockResponses, redirects: next, isRunning });
+	};
+
+	/**
 	 * Sets whether interception is running, persisting immediately (see `persist`).
 	 *
 	 * @param running - The new running state.
@@ -223,6 +240,7 @@ const useItemsState = (): ItemsStateContextValue => {
 		removeItem,
 		replaceItems,
 		upsertMockResponse,
+		upsertRedirect,
 	};
 };
 

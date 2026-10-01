@@ -24,6 +24,7 @@ const buildItemsState = (
 	removeItem: jest.fn(),
 	replaceItems: jest.fn(),
 	upsertMockResponse: jest.fn(),
+	upsertRedirect: jest.fn(),
 	...overrides,
 });
 
