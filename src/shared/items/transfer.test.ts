@@ -270,40 +270,8 @@ describe('parseImportedItems', () => {
 			expect(error).toMatch(/"destination" must be a non-empty string/);
 		});
 
-		it('rejects a non-array methods field', () => {
-			const error = expectFailure(
-				parseImportedItems(JSON.stringify([{ ...validRedirect, methods: 'GET' }])),
-			);
-			expect(error).toMatch(/"methods" must be an array of/);
-		});
-
-		it('rejects a methods array containing an invalid method', () => {
-			const error = expectFailure(
-				parseImportedItems(JSON.stringify([{ ...validRedirect, methods: ['GET', 'FETCH'] }])),
-			);
-			expect(error).toMatch(/"methods" must be an array of/);
-		});
-
-		it('accepts a redirect with no methods at all (all methods)', () => {
+		it('accepts a valid redirect', () => {
 			const result = parseImportedItems(JSON.stringify([validRedirect]));
-			expect(result.ok).toBe(true);
-		});
-
-		it('accepts a redirect with an empty methods array (also "all methods")', () => {
-			const result = parseImportedItems(
-				JSON.stringify([{ ...validRedirect, methods: [] }]),
-			);
-			expect(result.ok).toBe(true);
-			if (!result.ok) {
-				throw new Error('expected parseImportedItems to succeed');
-			}
-			expect(result.redirects).toEqual([{ ...validRedirect, methods: [] }]);
-		});
-
-		it('accepts a redirect with a valid, non-empty methods list', () => {
-			const result = parseImportedItems(
-				JSON.stringify([{ ...validRedirect, methods: ['GET', 'POST'] }]),
-			);
 			expect(result.ok).toBe(true);
 		});
 	});

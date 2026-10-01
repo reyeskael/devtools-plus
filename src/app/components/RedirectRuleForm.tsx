@@ -1,24 +1,10 @@
-import {
-	Alert,
-	Box,
-	Checkbox,
-	FormControl,
-	FormControlLabel,
-	FormGroup,
-	FormHelperText,
-	MenuItem,
-	Select,
-	TextField,
-	Tooltip,
-	Typography,
-} from '@mui/material';
+import { Alert, Box, FormControl, MenuItem, Select, TextField, Tooltip } from '@mui/material';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SelectChangeEvent } from '@mui/material';
 import { EditorTopBar } from './EditorTopBar';
 import { PatternTester } from './PatternTester';
-import { HTTP_METHODS } from '../../shared/items/types';
-import type { HttpMethod, RedirectMatchType } from '../../shared/items/types';
+import type { RedirectMatchType } from '../../shared/items/types';
 import type { RedirectRuleDraft } from '../../shared/items/redirectRuleDraft';
 
 interface RedirectRuleFormProps {
@@ -34,10 +20,9 @@ interface RedirectRuleFormProps {
 
 /**
  * The redirect rule editor: a top bar, an editable title, a "Match" section (match type + URL
- * pattern), a "Redirect to" destination field, a method-scoping checkbox group, and an embedded
- * `PatternTester` live preview. Fully controlled and storage-unaware — the parent owns the
- * draft, validation errors/warnings, and save/navigation behavior. Patterned directly on
- * `MockResponseForm`.
+ * pattern), a "Redirect to" destination field, and an embedded `PatternTester` live preview.
+ * Fully controlled and storage-unaware — the parent owns the draft, validation errors/warnings,
+ * and save/navigation behavior. Patterned directly on `MockResponseForm`.
  *
  * @param props.draft - The form's current, all-string/array field values.
  * @param props.onDraftChange - Called with the next draft whenever any field changes.
@@ -71,14 +56,6 @@ export const RedirectRuleForm = ({
 		value: RedirectRuleDraft[Field],
 	) => {
 		onDraftChange({ ...draft, [field]: value });
-	};
-
-	/** Toggles `method` in the draft's method scoping; an empty result means "all methods". */
-	const toggleMethod = (method: HttpMethod, checked: boolean) => {
-		const methods = checked
-			? [...draft.methods, method]
-			: draft.methods.filter((existing) => existing !== method);
-		updateField('methods', methods);
 	};
 
 	return (
@@ -155,33 +132,6 @@ export const RedirectRuleForm = ({
 						{warnings.urlPattern}
 					</Alert>
 				)}
-			</Box>
-
-			<Box sx={{ mt: 2 }}>
-				<Typography variant="subtitle1" gutterBottom>
-					Methods
-				</Typography>
-				<FormControl error={Boolean(errors.methods)} component="fieldset">
-					<FormGroup row>
-						{HTTP_METHODS.map((method) => (
-							<FormControlLabel
-								key={method}
-								control={
-									<Checkbox
-										checked={draft.methods.includes(method)}
-										onChange={(event) =>
-											toggleMethod(method, event.target.checked)
-										}
-									/>
-								}
-								label={method}
-							/>
-						))}
-					</FormGroup>
-					<FormHelperText>
-						{errors.methods ?? 'Leave all unchecked to match every method.'}
-					</FormHelperText>
-				</FormControl>
 			</Box>
 
 			<Box sx={{ mt: 2 }}>

@@ -14,9 +14,9 @@ interface RedirectRuleRowProps {
 
 /**
  * A single redirect rule row on the Redirect Rules list page. Shows the rule's name and a
- * one-line summary (methods, pattern, destination) via `formatRedirectSummary`, plus an
- * enable/disable switch. Clicking anywhere in the row opens the editor; the switch and delete
- * button stop that click from bubbling.
+ * one-line summary (pattern, destination) via `formatRedirectSummary`, plus an enable/disable
+ * switch. Clicking anywhere in the row opens the editor; the switch and delete button stop that
+ * click from bubbling.
  *
  * @param props.item - The redirect rule to display.
  * @param props.onEdit - Called with the item's id when the row is clicked (or activated via keyboard).

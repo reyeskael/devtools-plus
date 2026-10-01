@@ -168,23 +168,6 @@ describe('toDnrRules', () => {
 		});
 	});
 
-	describe('condition.requestMethods', () => {
-		it('is present, lowercased, when item.methods is a non-empty array', () => {
-			const rules = toDnrRules([makeRedirectItem({ methods: ['GET', 'POST'] })], true);
-			expect(rules[0].condition.requestMethods).toEqual(['get', 'post']);
-		});
-
-		it('is absent when methods is omitted', () => {
-			const rules = toDnrRules([makeRedirectItem({ methods: undefined })], true);
-			expect(rules[0].condition.requestMethods).toBeUndefined();
-		});
-
-		it('is absent when methods is an empty array', () => {
-			const rules = toDnrRules([makeRedirectItem({ methods: [] })], true);
-			expect(rules[0].condition.requestMethods).toBeUndefined();
-		});
-	});
-
 	describe('condition.resourceTypes', () => {
 		it('is always exactly the fixed resource type list, in order, and never includes main_frame', () => {
 			const rules = toDnrRules([makeRedirectItem()], true);

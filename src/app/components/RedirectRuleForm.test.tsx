@@ -8,7 +8,6 @@ const makeDraft = (overrides: Partial<RedirectRuleDraft> = {}): RedirectRuleDraf
 	matchType: 'wildcard',
 	urlPattern: '/api/v1/*',
 	destination: 'https://example.com/new/$1',
-	methods: [],
 	enabled: true,
 	...overrides,
 });
@@ -105,43 +104,6 @@ describe('RedirectRuleForm', () => {
 	it('shows the destination error when provided', () => {
 		renderForm({ errors: { destination: 'Destination is required' } });
 		expect(screen.getByText('Destination is required')).toBeInTheDocument();
-	});
-
-	it('checking a method checkbox adds it to draft.methods', async () => {
-		const draft = makeDraft({ methods: [] });
-		const { onDraftChange } = renderForm({ draft });
-
-		await userEvent.click(screen.getByRole('checkbox', { name: 'GET' }));
-
-		expect(onDraftChange).toHaveBeenCalledTimes(1);
-		expect(onDraftChange).toHaveBeenCalledWith({ ...draft, methods: ['GET'] });
-	});
-
-	it('unchecking a method checkbox removes it from draft.methods, preserving the rest', async () => {
-		const draft = makeDraft({ methods: ['GET', 'POST'] });
-		const { onDraftChange } = renderForm({ draft });
-
-		await userEvent.click(screen.getByRole('checkbox', { name: 'GET' }));
-
-		expect(onDraftChange).toHaveBeenCalledTimes(1);
-		expect(onDraftChange).toHaveBeenCalledWith({ ...draft, methods: ['POST'] });
-	});
-
-	it('reflects which methods are checked based on draft.methods', () => {
-		renderForm({ draft: makeDraft({ methods: ['POST', 'DELETE'] }) });
-		expect(screen.getByRole('checkbox', { name: 'GET' })).not.toBeChecked();
-		expect(screen.getByRole('checkbox', { name: 'POST' })).toBeChecked();
-		expect(screen.getByRole('checkbox', { name: 'DELETE' })).toBeChecked();
-	});
-
-	it('shows the methods error when provided', () => {
-		renderForm({ errors: { methods: 'Methods must be valid HTTP methods' } });
-		expect(screen.getByText('Methods must be valid HTTP methods')).toBeInTheDocument();
-	});
-
-	it('shows the default methods helper text when there is no methods error', () => {
-		renderForm();
-		expect(screen.getByText('Leave all unchecked to match every method.')).toBeInTheDocument();
 	});
 
 	it('does not render a urlPattern warning when none is provided', () => {

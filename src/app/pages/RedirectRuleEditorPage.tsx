@@ -20,7 +20,6 @@ const EMPTY_DRAFT: RedirectRuleDraft = {
 	matchType: 'wildcard',
 	urlPattern: '',
 	destination: '',
-	methods: [],
 	enabled: true,
 };
 
@@ -30,7 +29,6 @@ const draftFromItem = (item: RedirectRuleItem): RedirectRuleDraft => ({
 	matchType: item.matchType,
 	urlPattern: item.urlPattern,
 	destination: item.destination,
-	methods: item.methods ?? [],
 	enabled: item.enabled,
 });
 

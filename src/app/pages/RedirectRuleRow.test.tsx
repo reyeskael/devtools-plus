@@ -11,7 +11,6 @@ const makeItem = (overrides: Partial<RedirectRuleItem> = {}): RedirectRuleItem =
 	matchType: 'wildcard',
 	urlPattern: '*.js',
 	destination: 'https://localhost:3000/$1',
-	methods: ['GET', 'POST'],
 	...overrides,
 });
 
@@ -32,7 +31,6 @@ describe('RedirectRuleRow', () => {
 		render(
 			<RedirectRuleRow
 				item={makeItem({
-					methods: ['GET', 'POST'],
 					urlPattern: '*.js',
 					destination: 'https://localhost:3000/$1',
 				})}
@@ -41,23 +39,7 @@ describe('RedirectRuleRow', () => {
 				onDelete={jest.fn()}
 			/>,
 		);
-		expect(screen.getByText('GET,POST *.js → https://localhost:3000/$1')).toBeInTheDocument();
-	});
-
-	it('renders "ALL" in the summary when methods is omitted', () => {
-		render(
-			<RedirectRuleRow
-				item={makeItem({
-					methods: undefined,
-					urlPattern: '/old/path',
-					destination: '/new/path',
-				})}
-				onEdit={jest.fn()}
-				onToggle={jest.fn()}
-				onDelete={jest.fn()}
-			/>,
-		);
-		expect(screen.getByText('ALL /old/path → /new/path')).toBeInTheDocument();
+		expect(screen.getByText('*.js → https://localhost:3000/$1')).toBeInTheDocument();
 	});
 
 	it('renders the switch as checked when the item is enabled', () => {

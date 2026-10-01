@@ -1,5 +1,5 @@
 import { previewRedirect } from '../rules/previewRedirect';
-import type { HttpMethod, RedirectMatchType, RedirectRuleItem } from './types';
+import type { RedirectMatchType, RedirectRuleItem } from './types';
 
 /** The all-string form-state shape a redirect rule editor form holds while a user is typing. */
 export interface RedirectRuleDraft {
@@ -7,8 +7,6 @@ export interface RedirectRuleDraft {
 	matchType: RedirectMatchType;
 	urlPattern: string;
 	destination: string;
-	/** Empty array means "all methods", matching `RedirectRuleItem.methods`'s optional-field convention. */
-	methods: HttpMethod[];
 	enabled: boolean;
 }
 
@@ -20,7 +18,6 @@ export type ValidateRedirectRuleDraftResult =
 			matchType: RedirectMatchType;
 			urlPattern: string;
 			destination: string;
-			methods?: HttpMethod[];
 			warnings: Partial<Record<keyof RedirectRuleDraft, string>>;
 	  }
 	| { ok: false; errors: Partial<Record<keyof RedirectRuleDraft, string>> };
@@ -122,7 +119,6 @@ export const validateRedirectRuleDraft = (
 		matchType: draft.matchType,
 		urlPattern,
 		destination,
-		methods: draft.methods.length > 0 ? draft.methods : undefined,
 		warnings,
 	};
 };
@@ -149,6 +145,5 @@ export const toRedirectRuleItem = (draft: RedirectRuleDraft, id: string): Redire
 		matchType: result.matchType,
 		urlPattern: result.urlPattern,
 		destination: result.destination,
-		methods: result.methods,
 	};
 };

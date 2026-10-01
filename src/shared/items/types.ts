@@ -44,8 +44,6 @@ export interface RedirectRuleItem extends PopupItemBase {
 	urlPattern: string;
 	/** A static destination URL, or a template with `$1`..`$9` capture-group refs (`$$` escapes a literal `$`). */
 	destination: string;
-	/** HTTP methods this rule applies to. Omitted or empty means "all methods". */
-	methods?: HttpMethod[];
 }
 
 /** Either kind of popup item, discriminated by `kind`. */

@@ -6,7 +6,6 @@ const validWildcardDraft: RedirectRuleDraft = {
 	matchType: 'wildcard',
 	urlPattern: 'https://prod.example.com/api/*',
 	destination: 'https://localhost:3000/api/$1',
-	methods: [],
 	enabled: true,
 };
 
@@ -15,7 +14,6 @@ const validRegexDraft: RedirectRuleDraft = {
 	matchType: 'regex',
 	urlPattern: '^https://prod\\.example\\.com/api/(.*)$',
 	destination: 'https://localhost:3000/api/$1',
-	methods: [],
 	enabled: true,
 };
 
@@ -47,7 +45,6 @@ describe('validateRedirectRuleDraft', () => {
 		expect(result.matchType).toBe('wildcard');
 		expect(result.urlPattern).toBe('https://prod.example.com/api/*');
 		expect(result.destination).toBe('https://localhost:3000/api/$1');
-		expect(result.methods).toBeUndefined();
 		expect(result.warnings).toEqual({});
 	});
 
@@ -58,7 +55,6 @@ describe('validateRedirectRuleDraft', () => {
 		expect(result.matchType).toBe('regex');
 		expect(result.urlPattern).toBe('^https://prod\\.example\\.com/api/(.*)$');
 		expect(result.destination).toBe('https://localhost:3000/api/$1');
-		expect(result.methods).toBeUndefined();
 		expect(result.warnings).toEqual({});
 	});
 
@@ -174,14 +170,6 @@ describe('validateRedirectRuleDraft', () => {
 		expect(Object.keys(errors)).toHaveLength(3);
 	});
 
-	it('passes a non-empty methods array through untouched in the ok result', () => {
-		const result = expectOk(
-			validateRedirectRuleDraft({ ...validWildcardDraft, methods: ['GET', 'POST'] }),
-		);
-
-		expect(result.methods).toEqual(['GET', 'POST']);
-	});
-
 	describe('D15 self-match warning (non-blocking)', () => {
 		it('warns, but still ok: true, for a wildcard "*" pattern that matches literally everything, including its own destination', () => {
 			const result = expectOk(
@@ -250,7 +238,6 @@ describe('toRedirectRuleItem', () => {
 			matchType: 'wildcard',
 			urlPattern: 'https://prod.example.com/api/*',
 			destination: 'https://localhost:3000/api/$1',
-			methods: undefined,
 		});
 	});
 
@@ -264,21 +251,6 @@ describe('toRedirectRuleItem', () => {
 		const item = toRedirectRuleItem({ ...validWildcardDraft, enabled: false }, 'redirect-1');
 
 		expect(item.enabled).toBe(false);
-	});
-
-	it('omits methods when the draft methods array is empty', () => {
-		const item = toRedirectRuleItem({ ...validWildcardDraft, methods: [] }, 'redirect-1');
-
-		expect(item.methods).toBeUndefined();
-	});
-
-	it('includes methods when the draft methods array is non-empty', () => {
-		const item = toRedirectRuleItem(
-			{ ...validWildcardDraft, methods: ['GET', 'POST'] },
-			'redirect-1',
-		);
-
-		expect(item.methods).toEqual(['GET', 'POST']);
 	});
 
 	it('throws when converting an invalid draft', () => {

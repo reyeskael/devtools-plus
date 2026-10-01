@@ -16,7 +16,6 @@ const existingItem: RedirectRuleItem = {
 	matchType: 'wildcard',
 	urlPattern: '/api/v1/*',
 	destination: 'https://example.com/v2/$1',
-	methods: ['GET'],
 };
 
 const seedStorage = (redirects: RedirectRuleItem[] = []) => {
@@ -50,12 +49,9 @@ describe('RedirectRuleEditorPage', () => {
 			expect(screen.getByLabelText('URL pattern')).toHaveValue('');
 		});
 
-		it('defaults to the wildcard match type and no method scoping (EMPTY_DRAFT)', () => {
+		it('defaults to the wildcard match type (EMPTY_DRAFT)', () => {
 			renderEditor();
 			expect(screen.getByRole('combobox', { name: 'Match type' })).toHaveTextContent('Wildcard');
-			for (const method of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']) {
-				expect(screen.getByRole('checkbox', { name: method })).not.toBeChecked();
-			}
 		});
 
 		it('shows validation errors and does not save when the draft is invalid', async () => {
@@ -115,7 +111,6 @@ describe('RedirectRuleEditorPage', () => {
 			expect(screen.getByDisplayValue('Old API redirect')).toBeInTheDocument();
 			expect(screen.getByLabelText('URL pattern')).toHaveValue('/api/v1/*');
 			expect(screen.getByLabelText('Destination')).toHaveValue('https://example.com/v2/$1');
-			expect(screen.getByRole('checkbox', { name: 'GET' })).toBeChecked();
 		});
 
 		it('uses the draft name as the breadcrumb label', () => {

@@ -1,4 +1,4 @@
-import type { HttpMethod, PopupItem, RedirectRuleItem } from '../items/types';
+import type { PopupItem, RedirectRuleItem } from '../items/types';
 import { dollarRefsToBackslash, hasCaptureRef, wildcardToRegex } from './pattern';
 
 /**
@@ -102,11 +102,6 @@ const toDnrRule = (item: RedirectRuleItem, priority: number): chrome.declarative
 		...toPatternCondition(item),
 		resourceTypes: REDIRECT_RESOURCE_TYPES,
 	};
-	if (item.methods && item.methods.length > 0) {
-		condition.requestMethods = item.methods.map(
-			(method: HttpMethod) => method.toLowerCase() as Lowercase<HttpMethod>,
-		);
-	}
 
 	return {
 		id: hashToRuleId(item.id),

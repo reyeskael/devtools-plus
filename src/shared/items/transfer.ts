@@ -114,14 +114,6 @@ const validateRedirect = (index: number, entry: Record<string, unknown>): string
 	if (typeof entry.destination !== 'string' || entry.destination.length === 0) {
 		return `${describeEntry(index, entry)}: "destination" must be a non-empty string`;
 	}
-	if (entry.methods !== undefined) {
-		if (
-			!Array.isArray(entry.methods) ||
-			!entry.methods.every((method) => HTTP_METHODS.includes(method as HttpMethod))
-		) {
-			return `${describeEntry(index, entry)}: "methods" must be an array of ${HTTP_METHODS.join(', ')} when present`;
-		}
-	}
 	return null;
 };
 

@@ -17,7 +17,6 @@ const fixtureRedirects: RedirectRuleItem[] = [
 		matchType: 'wildcard',
 		urlPattern: '/api/v1/*',
 		destination: 'https://example.com/v2/$1',
-		methods: ['GET'],
 	},
 	{
 		id: 'redirect-2',
@@ -77,9 +76,9 @@ describe('RedirectRulesPage', () => {
 		});
 		renderAtPath('/redirects');
 		expect(screen.getByText('Old API redirect')).toBeInTheDocument();
-		expect(screen.getByText('GET /api/v1/* → https://example.com/v2/$1')).toBeInTheDocument();
+		expect(screen.getByText('/api/v1/* → https://example.com/v2/$1')).toBeInTheDocument();
 		expect(screen.getByText('Static asset redirect')).toBeInTheDocument();
-		expect(screen.getByText('ALL *.js → https://localhost:3000/$1')).toBeInTheDocument();
+		expect(screen.getByText('*.js → https://localhost:3000/$1')).toBeInTheDocument();
 	});
 
 	it('does not render the empty state when there are redirect rules', () => {

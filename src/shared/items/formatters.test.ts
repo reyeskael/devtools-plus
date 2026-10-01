@@ -33,7 +33,7 @@ describe('formatMockResponseSummary', () => {
 });
 
 describe('formatRedirectSummary', () => {
-	it('renders "ALL" when methods is omitted, meaning the rule applies to every method', () => {
+	it('formats urlPattern and destination into a summary string', () => {
 		const item: RedirectRuleItem = {
 			id: 'rule-redirect-old-path',
 			name: 'Redirect old path',
@@ -44,40 +44,10 @@ describe('formatRedirectSummary', () => {
 			destination: '/new/path',
 		};
 
-		expect(formatRedirectSummary(item)).toBe('ALL /old/path → /new/path');
+		expect(formatRedirectSummary(item)).toBe('/old/path → /new/path');
 	});
 
-	it('renders "ALL" when methods is an empty array', () => {
-		const item: RedirectRuleItem = {
-			id: 'rule-empty-methods',
-			name: 'Empty methods rule',
-			kind: 'redirect',
-			enabled: true,
-			matchType: 'wildcard',
-			urlPattern: '/api/public/*',
-			destination: 'https://localhost:3000/$1',
-			methods: [],
-		};
-
-		expect(formatRedirectSummary(item)).toBe('ALL /api/public/* → https://localhost:3000/$1');
-	});
-
-	it('renders a comma-joined method list when methods is a non-empty scoped list', () => {
-		const item: RedirectRuleItem = {
-			id: 'rule-scoped-methods',
-			name: 'Scoped methods rule',
-			kind: 'redirect',
-			enabled: true,
-			matchType: 'wildcard',
-			urlPattern: '*.js',
-			destination: 'https://localhost:3000/$1',
-			methods: ['GET', 'POST'],
-		};
-
-		expect(formatRedirectSummary(item)).toBe('GET,POST *.js → https://localhost:3000/$1');
-	});
-
-	it('renders a single scoped method without a trailing comma', () => {
+	it('formats a regex pattern the same way', () => {
 		const item: RedirectRuleItem = {
 			id: 'rule-single-method',
 			name: 'Single method rule',
@@ -86,9 +56,8 @@ describe('formatRedirectSummary', () => {
 			matchType: 'regex',
 			urlPattern: '^/api/v1/(.*)$',
 			destination: '/api/v2/$1',
-			methods: ['DELETE'],
 		};
 
-		expect(formatRedirectSummary(item)).toBe('DELETE ^/api/v1/(.*)$ → /api/v2/$1');
+		expect(formatRedirectSummary(item)).toBe('^/api/v1/(.*)$ → /api/v2/$1');
 	});
 });
