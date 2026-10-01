@@ -25,7 +25,7 @@ export default defineManifest({
 		service_worker: 'src/background/service-worker.ts',
 		type: 'module',
 	},
-	permissions: ['storage', 'tabs'],
+	permissions: ['storage', 'tabs', 'declarativeNetRequest', 'declarativeNetRequestFeedback'],
 	host_permissions: ['<all_urls>'],
 	content_scripts: [
 		{

@@ -56,6 +56,12 @@ const onChangedListeners = new Set<StorageListener>();
 		setBadgeText: jest.fn(),
 		setBadgeBackgroundColor: jest.fn(),
 	},
+	declarativeNetRequest: {
+		getDynamicRules: jest.fn((callback: (rules: chrome.declarativeNetRequest.Rule[]) => void) =>
+			callback([]),
+		),
+		updateDynamicRules: jest.fn(() => Promise.resolve()),
+	},
 } as unknown as typeof chrome;
 
 beforeEach(() => {
