@@ -1,4 +1,21 @@
-import { Alert, Box, FormControl, MenuItem, Select, TextField, Tooltip } from '@mui/material';
+import {
+	Alert,
+	Box,
+	Button,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
+	FormControl,
+	IconButton,
+	InputAdornment,
+	InputLabel,
+	MenuItem,
+	Select,
+	TextField,
+	Tooltip,
+} from '@mui/material';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { SelectChangeEvent } from '@mui/material';
@@ -20,9 +37,10 @@ interface RedirectRuleFormProps {
 
 /**
  * The redirect rule editor: a top bar, an editable title, a "Match" section (match type + URL
- * pattern), a "Redirect to" destination field, and an embedded `PatternTester` live preview.
- * Fully controlled and storage-unaware — the parent owns the draft, validation errors/warnings,
- * and save/navigation behavior. Patterned directly on `MockResponseForm`.
+ * pattern), a "Redirect to" destination field, and a `PatternTester` live preview opened from a
+ * button on the URL pattern field, shown in a dialog. Fully controlled and storage-unaware — the
+ * parent owns the draft, validation errors/warnings, and save/navigation behavior. Patterned
+ * directly on `MockResponseForm`.
  *
  * @param props.draft - The form's current, all-string/array field values.
  * @param props.onDraftChange - Called with the next draft whenever any field changes.
@@ -49,6 +67,7 @@ export const RedirectRuleForm = ({
 	// The pattern tester's sample URL is ephemeral preview-only UI state — it isn't part of the
 	// saved `RedirectRuleItem`, so it lives here rather than flowing through `onDraftChange`.
 	const [sampleUrl, setSampleUrl] = useState('');
+	const [isPatternTesterOpen, setIsPatternTesterOpen] = useState(false);
 
 	/** Applies a single field change on top of the current draft and reports the next draft. */
 	const updateField = <Field extends keyof RedirectRuleDraft>(
@@ -84,10 +103,12 @@ export const RedirectRuleForm = ({
 
 			<Box>
 				<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-					<FormControl sx={{ minWidth: 130, pt: 1 }}>
+					<FormControl sx={{ minWidth: 130 }}>
+						<InputLabel id="redirect-match-type-label">Match type</InputLabel>
 						<Select
+							labelId="redirect-match-type-label"
+							label="Match type"
 							value={draft.matchType}
-							aria-label="Match type"
 							onChange={(event: SelectChangeEvent) =>
 								updateField('matchType', event.target.value as RedirectMatchType)
 							}
@@ -110,6 +131,23 @@ export const RedirectRuleForm = ({
 							error={Boolean(errors.urlPattern)}
 							helperText={errors.urlPattern}
 							fullWidth
+							slotProps={{
+								input: {
+									endAdornment: (
+										<InputAdornment position="end">
+											<Tooltip title="Test this pattern">
+												<IconButton
+													aria-label="Test pattern"
+													onClick={() => setIsPatternTesterOpen(true)}
+													edge="end"
+												>
+													<ScienceOutlinedIcon />
+												</IconButton>
+											</Tooltip>
+										</InputAdornment>
+									),
+								},
+							}}
 						/>
 					</Tooltip>
 				</Box>
@@ -134,15 +172,26 @@ export const RedirectRuleForm = ({
 				)}
 			</Box>
 
-			<Box sx={{ mt: 2 }}>
-				<PatternTester
-					matchType={draft.matchType}
-					urlPattern={draft.urlPattern}
-					destination={draft.destination}
-					sampleUrl={sampleUrl}
-					onSampleUrlChange={setSampleUrl}
-				/>
-			</Box>
+			<Dialog
+				open={isPatternTesterOpen}
+				onClose={() => setIsPatternTesterOpen(false)}
+				maxWidth="sm"
+				fullWidth
+			>
+				<DialogTitle>Pattern tester</DialogTitle>
+				<DialogContent>
+					<PatternTester
+						matchType={draft.matchType}
+						urlPattern={draft.urlPattern}
+						destination={draft.destination}
+						sampleUrl={sampleUrl}
+						onSampleUrlChange={setSampleUrl}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setIsPatternTesterOpen(false)}>Close</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	);
 };

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitForElementToBeRemoved } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RedirectRuleForm } from './RedirectRuleForm';
 import type { RedirectRuleDraft } from '../../shared/items/redirectRuleDraft';
@@ -205,8 +205,23 @@ describe('RedirectRuleForm', () => {
 		expect(onDraftChange).toHaveBeenCalledWith({ ...draft, enabled: true });
 	});
 
-	it('renders the embedded PatternTester', () => {
+	it('does not render the PatternTester dialog until the "Test pattern" button is clicked', () => {
 		renderForm();
+		expect(screen.queryByLabelText('Sample request URL')).not.toBeInTheDocument();
+	});
+
+	it('opens the PatternTester dialog when the "Test pattern" button is clicked', async () => {
+		renderForm();
+		await userEvent.click(screen.getByRole('button', { name: 'Test pattern' }));
 		expect(screen.getByLabelText('Sample request URL')).toBeInTheDocument();
+	});
+
+	it('closes the PatternTester dialog when Close is clicked', async () => {
+		renderForm();
+		await userEvent.click(screen.getByRole('button', { name: 'Test pattern' }));
+		const sampleUrlField = screen.getByLabelText('Sample request URL');
+
+		await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+		await waitForElementToBeRemoved(sampleUrlField);
 	});
 });

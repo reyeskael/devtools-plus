@@ -1,4 +1,4 @@
-import { Alert, Box, TextField, Typography } from '@mui/material';
+import { Alert, Box, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { hasCaptureRef } from '../../shared/rules/pattern';
 import { previewRedirect } from '../../shared/rules/previewRedirect';
@@ -104,7 +104,6 @@ export const PatternTester = ({
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-			<Typography variant="subtitle2">Pattern tester</Typography>
 			<TextField
 				label="Sample request URL"
 				placeholder="https://example.com/api/v1/users/42?foo=bar"
