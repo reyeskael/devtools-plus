@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { BrandSwitch } from '../../shared/components/BrandSwitch';
 
 interface EditorTopBarProps {
+	rootBreadcrumbLabel: string;
 	breadcrumbLabel: string;
 	onBreadcrumbBack?: () => void;
 	enabled: boolean;
@@ -14,12 +15,14 @@ interface EditorTopBarProps {
 }
 
 /**
- * The mock response editor's top bar: a "Mock APIs > {breadcrumbLabel}" breadcrumb, an enabled
- * `BrandSwitch`, an optional overflow menu, and a Save button.
+ * An editor's top bar: a "{rootBreadcrumbLabel} > {breadcrumbLabel}" breadcrumb, an enabled
+ * `BrandSwitch`, an optional overflow menu, and a Save button. Shared by every item editor
+ * (mock responses, redirect rules, …) — only the breadcrumb labels differ per editor.
  *
+ * @param props.rootBreadcrumbLabel - The list page's label, e.g. "Mock APIs" or "Redirect Rules".
  * @param props.breadcrumbLabel - The current mode/item label, e.g. "New mock" or the item's name.
- * @param props.onBreadcrumbBack - Called when the "Mock APIs" breadcrumb segment is clicked.
- * @param props.enabled - Whether the mock is enabled.
+ * @param props.onBreadcrumbBack - Called when the root breadcrumb segment is clicked.
+ * @param props.enabled - Whether the item is enabled.
  * @param props.onEnabledChange - Called with the new enabled state when the switch is toggled.
  * @param props.onSave - Called when the Save button is clicked.
  * @param props.overflowMenuItems - Menu items to render in the overflow "More" menu; the menu
@@ -27,6 +30,7 @@ interface EditorTopBarProps {
  * @returns The editor top bar UI.
  */
 export const EditorTopBar = ({
+	rootBreadcrumbLabel,
 	breadcrumbLabel,
 	onBreadcrumbBack,
 	enabled,
@@ -45,8 +49,13 @@ export const EditorTopBar = ({
 	return (
 		<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 			<Breadcrumbs>
-				<Link component="button" underline="hover" color="inherit" onClick={onBreadcrumbBack}>
-					Mock APIs
+				<Link
+					component="button"
+					underline="hover"
+					color="inherit"
+					onClick={onBreadcrumbBack}
+				>
+					{rootBreadcrumbLabel}
 				</Link>
 				<Typography color="text.primary">{breadcrumbLabel}</Typography>
 			</Breadcrumbs>

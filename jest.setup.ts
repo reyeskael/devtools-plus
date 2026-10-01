@@ -61,6 +61,7 @@ const onChangedListeners = new Set<StorageListener>();
 			callback([]),
 		),
 		updateDynamicRules: jest.fn(() => Promise.resolve()),
+		isRegexSupported: jest.fn(() => Promise.resolve({ isSupported: true })),
 	},
 } as unknown as typeof chrome;
 

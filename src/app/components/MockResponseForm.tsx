@@ -66,6 +66,7 @@ export const MockResponseForm = ({
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column' }}>
 			<EditorTopBar
+				rootBreadcrumbLabel="Mock APIs"
 				breadcrumbLabel={breadcrumbLabel}
 				onBreadcrumbBack={onBreadcrumbBack}
 				enabled={draft.enabled}
@@ -98,7 +99,8 @@ export const MockResponseForm = ({
 						onChange={(event) => updateField('urlPattern', event.target.value)}
 						error={Boolean(errors.urlPattern)}
 						helperText={
-							errors.urlPattern ?? 'Plain substring match — not a glob or regex pattern.'
+							errors.urlPattern ??
+							'Plain substring match — not a glob or regex pattern.'
 						}
 						fullWidth
 					/>

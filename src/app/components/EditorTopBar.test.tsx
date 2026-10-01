@@ -18,6 +18,7 @@ const renderTopBar = (overrides: RenderOverrides = {}) => {
 	const onSave = overrides.onSave ?? jest.fn();
 	render(
 		<EditorTopBar
+			rootBreadcrumbLabel="Mock APIs"
 			breadcrumbLabel={overrides.breadcrumbLabel ?? 'New mock'}
 			onBreadcrumbBack={onBreadcrumbBack}
 			enabled={overrides.enabled ?? false}
@@ -36,6 +37,20 @@ describe('EditorTopBar', () => {
 		expect(screen.getByText('New mock')).toBeInTheDocument();
 	});
 
+	it('renders the given rootBreadcrumbLabel instead of a hardcoded string', () => {
+		render(
+			<EditorTopBar
+				rootBreadcrumbLabel="Redirect Rules"
+				breadcrumbLabel="New redirect rule"
+				enabled={false}
+				onEnabledChange={jest.fn()}
+				onSave={jest.fn()}
+			/>,
+		);
+		expect(screen.getByRole('button', { name: 'Redirect Rules' })).toBeInTheDocument();
+		expect(screen.queryByText('Mock APIs')).not.toBeInTheDocument();
+	});
+
 	it('calls onBreadcrumbBack when the "Mock APIs" breadcrumb is clicked', async () => {
 		const { onBreadcrumbBack } = renderTopBar();
 		await userEvent.click(screen.getByRole('button', { name: 'Mock APIs' }));
@@ -45,6 +60,7 @@ describe('EditorTopBar', () => {
 	it('does not throw when the "Mock APIs" breadcrumb is clicked without an onBreadcrumbBack handler', async () => {
 		render(
 			<EditorTopBar
+				rootBreadcrumbLabel="Mock APIs"
 				breadcrumbLabel="New mock"
 				enabled={false}
 				onEnabledChange={jest.fn()}
@@ -59,6 +75,7 @@ describe('EditorTopBar', () => {
 	it('renders the Enabled switch as checked or unchecked based on the enabled prop', () => {
 		const { rerender } = render(
 			<EditorTopBar
+				rootBreadcrumbLabel="Mock APIs"
 				breadcrumbLabel="New mock"
 				enabled={true}
 				onEnabledChange={jest.fn()}
@@ -69,6 +86,7 @@ describe('EditorTopBar', () => {
 
 		rerender(
 			<EditorTopBar
+				rootBreadcrumbLabel="Mock APIs"
 				breadcrumbLabel="New mock"
 				enabled={false}
 				onEnabledChange={jest.fn()}

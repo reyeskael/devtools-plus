@@ -17,7 +17,9 @@ jest.mock('./JsonEditor', () => ({
 				aria-label="Response Body"
 				value={props.value}
 				disabled={props.disabled}
-				onChange={(event: ChangeEvent<HTMLTextAreaElement>) => props.onChange(event.target.value)}
+				onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+					props.onChange(event.target.value)
+				}
 			/>
 			{props.disabled && props.disabledCaption && <span>{props.disabledCaption}</span>}
 			{props.error && <span>{props.error}</span>}
@@ -143,7 +145,9 @@ describe('MockResponseForm', () => {
 	});
 
 	it('shows the statusCode error when provided', () => {
-		renderForm({ errors: { statusCode: 'Status code must be an integer between 100 and 599' } });
+		renderForm({
+			errors: { statusCode: 'Status code must be an integer between 100 and 599' },
+		});
 		expect(
 			screen.getByText('Status code must be an integer between 100 and 599'),
 		).toBeInTheDocument();
