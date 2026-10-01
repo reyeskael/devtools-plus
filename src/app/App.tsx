@@ -2,9 +2,10 @@ import { Redirect, Route, Router, Switch } from 'wouter';
 import type { BaseLocationHook } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
 import { ItemsStateProvider } from '../shared/context/ItemsStateContext';
-import { HttpRulesPlaceholder } from './RoutePlaceholders';
 import { MockApiPage } from './pages/MockApiPage';
 import { MockEditorPage } from './pages/MockEditorPage';
+import { RedirectRulesPage } from './pages/RedirectRulesPage';
+import { RedirectRuleEditorPage } from './pages/RedirectRuleEditorPage';
 
 interface AppRoutesProps {
 	/**
@@ -31,7 +32,13 @@ export const AppRoutes = ({ hook = useHashLocation }: AppRoutesProps = {}) => (
 					<MockEditorPage />
 				</Route>
 				<Route path="/mock-api/:id">{(params) => <MockEditorPage id={params.id} />}</Route>
-				<Route path="/redirects" component={HttpRulesPlaceholder} />
+				<Route path="/redirects" component={RedirectRulesPage} />
+				<Route path="/redirects/new">
+					<RedirectRuleEditorPage />
+				</Route>
+				<Route path="/redirects/:id">
+					{(params) => <RedirectRuleEditorPage id={params.id} />}
+				</Route>
 				<Route>
 					<Redirect to="/mock-api" />
 				</Route>

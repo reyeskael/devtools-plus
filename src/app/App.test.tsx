@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import type { ChangeEvent } from 'react';
 import { memoryLocation } from 'wouter/memory-location';
 import { AppRoutes } from './App';
-import type { MockResponseItem } from '../shared/items/types';
+import type { MockResponseItem, RedirectRuleItem } from '../shared/items/types';
 
 jest.mock('./components/JsonEditor', () => ({
 	JsonEditor: (props: {
@@ -17,7 +17,9 @@ jest.mock('./components/JsonEditor', () => ({
 				aria-label="Response Body"
 				value={props.value}
 				disabled={props.disabled}
-				onChange={(event: ChangeEvent<HTMLTextAreaElement>) => props.onChange(event.target.value)}
+				onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+					props.onChange(event.target.value)
+				}
 			/>
 			{props.disabled && props.disabledCaption && <span>{props.disabledCaption}</span>}
 			{props.error && <span>{props.error}</span>}
@@ -38,9 +40,22 @@ const fixtureMockResponse: MockResponseItem = {
 	statusText: 'OK',
 };
 
-const seedStorage = (mockResponses: MockResponseItem[] = []) => {
+const fixtureRedirectRule: RedirectRuleItem = {
+	id: 'redirect-1',
+	name: 'Old API redirect',
+	kind: 'redirect',
+	enabled: true,
+	matchType: 'wildcard',
+	urlPattern: '/api/v1/*',
+	destination: 'https://example.com/v2/$1',
+};
+
+const seedStorage = (
+	mockResponses: MockResponseItem[] = [],
+	redirects: RedirectRuleItem[] = [],
+) => {
 	chrome.storage.local.set({
-		[STORAGE_KEY]: { mockResponses, redirects: [], isRunning: true },
+		[STORAGE_KEY]: { mockResponses, redirects, isRunning: true },
 	});
 };
 
@@ -78,9 +93,27 @@ describe('AppRoutes', () => {
 		expect(screen.getByRole('heading', { name: /mock apis/i })).toBeInTheDocument();
 	});
 
-	it('renders the http rules placeholder at /redirects', () => {
+	it('renders the Redirect Rules list page at /redirects', () => {
 		renderAtPath('/redirects');
-		expect(screen.getByText(/http rules — not yet implemented/i)).toBeInTheDocument();
+		expect(screen.getByRole('heading', { name: /redirect rules/i })).toBeInTheDocument();
+		expect(screen.getByRole('button', { name: /^add$/i })).toBeInTheDocument();
+	});
+
+	it('renders the redirect editor in create mode at /redirects/new', () => {
+		renderAtPath('/redirects/new');
+		expect(screen.getByText('New redirect rule')).toBeInTheDocument();
+		expect(screen.getByLabelText('URL pattern')).toHaveValue('');
+	});
+
+	it('renders the redirect editor in edit mode with the :id param at /redirects/:id', () => {
+		seedStorage([], [fixtureRedirectRule]);
+		renderAtPath(`/redirects/${fixtureRedirectRule.id}`);
+		expect(screen.getByDisplayValue('Old API redirect')).toBeInTheDocument();
+	});
+
+	it('redirects to the Redirect Rules list page when :id does not match any redirect rule', () => {
+		renderAtPath('/redirects/does-not-exist');
+		expect(screen.getByRole('heading', { name: /redirect rules/i })).toBeInTheDocument();
 	});
 
 	it('redirects an unknown path to the mock API list page', () => {
