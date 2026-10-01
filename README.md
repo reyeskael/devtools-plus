@@ -10,11 +10,12 @@ Built with React 19 + TypeScript + MUI 9, bundled by Vite via `@crxjs/vite-plugi
 
 Early scaffold. What works today:
 
-- Popup UI listing mock responses and HTTP rules, with per-item enable/delete and a global run switch, persisted to `chrome.storage.local`.
-- Working `fetch` and `XMLHttpRequest` interception in the page's main world, driven by the popup's state.
+- Popup UI listing mock responses and redirect rules, with per-item enable/delete and a global run switch, persisted to `chrome.storage.local`.
+- Working `fetch` and `XMLHttpRequest` interception in the page's main world, driven by the popup's state — serves mocked responses.
+- Redirect rules, enforced independently via `chrome.declarativeNetRequest` (DNR) from the background service worker: a request whose URL matches a rule's pattern (wildcard or regex) is sent to a different destination URL instead, including a full editor UI (`/redirects/new`, `/redirects/:id`) for authoring them. See [docs/architecture.md](docs/architecture.md#redirects-the-second-enforcement-path) for the authoring syntax, the CORS limitation, and the dev-mode-only badge caveat.
 - Export/Import in the popup toolbar: Export downloads the current items as a `.json` file; Import accepts a `.json` file via a file picker or pasted JSON text.
 
-Not built yet: any UI for creating or editing mocks (the full-page app is a shell), and the HTTP rules (`block` / `redirect` / `modify-headers`) are listed in the popup but not yet enforced — they are the intended job of `chrome.declarativeNetRequest`, a separate feature from mocking.
+Not built yet: any UI for creating or editing mocks (the full-page app is a shell for that kind specifically — redirect rules do have a full editor). The `block` and `modify-headers` HTTP rule actions that used to be listed alongside redirect have been **removed entirely**, not deferred — only `redirect` survives, as its own first-class item kind.
 
 ## Requirements
 
@@ -59,16 +60,23 @@ A Husky `pre-push` hook runs `yarn test` before every push and blocks it if any 
 
 ## Architecture
 
-The extension is split into three pieces — popup, an ISOLATED-world bridge, and a MAIN-world interceptor, plus the background service worker for the badge — connected by a one-way data flow through `chrome.storage`, with a `postMessage` return leg for the per-tab badge count. See **[docs/architecture.md](docs/architecture.md)** for the full data flow, the bootstrap race and how it's resolved, matching semantics, what is and isn't intercepted, badge behavior, the `<all_urls>` permission justification, and the project's file layout.
+Mocks and redirects are enforced by two independent paths:
 
-## Defining mocks
+- **Mocks** — popup, an ISOLATED-world bridge, and a MAIN-world interceptor, plus the background service worker for the badge — connected by a one-way data flow through `chrome.storage`, with a `postMessage` return leg for the per-tab badge count.
+- **Redirects** — popup and the background service worker only: the worker reads the same stored items directly and installs them as `chrome.declarativeNetRequest` (DNR) dynamic rules, which Chrome's own network stack matches and enforces. No content script is involved in enforcing a redirect.
 
-A fresh install starts from the popup's empty state. Until there's a full editor UI, the way to get data into the tool is the **Export/Import** feature in the popup toolbar:
+See **[docs/architecture.md](docs/architecture.md)** for the full data flow of both paths, the bootstrap race and how it's resolved, matching semantics, what is and isn't intercepted/redirected, redirect authoring syntax, the CORS limitation on cross-origin redirects, badge behavior (including the dev-mode-only caveat on redirect match counting), the `<all_urls>` permission justification, and the project's file layout.
 
-- **Export** downloads all current items (mock responses and HTTP rules) as a single `.json` file.
-- **Import** accepts a `.json` file via a file picker, or pasted JSON text, and replaces whichever of mock responses / HTTP rules are present in the file (a file with only mocks leaves existing HTTP rules untouched, and vice versa).
+## Defining mocks and redirects
 
-`src/shared/items/__fixtures__/sample-mock-responses.json` is a worked example of the import format, used in tests. Each entry is a `MockResponseItem` or `HttpRuleItem` (`src/shared/items/types.ts`); for a `MockResponseItem`:
+A fresh install starts from the popup's empty state. For **mocks**, since there's no editor UI yet, the way to get data into the tool is the **Export/Import** feature in the popup toolbar:
+
+- **Export** downloads all current items (mock responses and redirect rules) as a single `.json` file.
+- **Import** accepts a `.json` file via a file picker, or pasted JSON text, and replaces whichever of mock responses / redirects are present in the file (a file with only mocks leaves existing redirects untouched, and vice versa). Legacy HTTP-rule JSON from before the redirect feature (`action: 'redirect'` entries) is rejected on import with a clear error rather than migrated.
+
+**Redirect rules** have a full editor UI instead: open the full-page app and use the "Redirect Rules" tab, or the popup's Redirect Rules tab's "+" action, to reach `/redirects/new`. A redirect rule matches a request URL by wildcard or regex pattern and sends it to a static destination URL or a template referencing the pattern's `$1`-`$9` capture groups (`$$` escapes a literal `$`). See [docs/architecture.md](docs/architecture.md#redirect-authoring-syntax) for the full syntax, including why a destination can't be a bare capture ref alone, and the CORS and dev-mode-badge caveats.
+
+`src/shared/items/__fixtures__/sample-mock-responses.json` is a worked example of the import format, used in tests. Each entry is a `MockResponseItem` or `RedirectRuleItem` (`src/shared/items/types.ts`); for a `MockResponseItem`:
 
 ```json
 {
@@ -100,4 +108,4 @@ Jest with `ts-jest` and the jsdom environment. Tests are colocated as `*.test.ts
 
 ## Permissions
 
-`storage`, `tabs`, and `<all_urls>` host permissions. See [docs/architecture.md](docs/architecture.md#permissions-and-all_urls) for what each is used for and the justification for the broad host permission.
+`storage`, `tabs`, `declarativeNetRequest`, `declarativeNetRequestFeedback`, and `<all_urls>` host permissions. See [docs/architecture.md](docs/architecture.md#permissions-and-all_urls) for what each is used for (the last two power redirect enforcement and its badge counting) and the justification for the broad host permission.
