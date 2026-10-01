@@ -2,7 +2,7 @@ import { Tab, Tabs } from '@mui/material';
 import ApiOutlinedIcon from '@mui/icons-material/ApiOutlined';
 import RuleOutlinedIcon from '@mui/icons-material/RuleOutlined';
 
-export type PopupTabKey = 'mock-responses' | 'http-rules';
+export type PopupTabKey = 'mock-responses' | 'redirects';
 
 interface PopupTabsProps {
 	value: PopupTabKey;
@@ -10,7 +10,7 @@ interface PopupTabsProps {
 }
 
 /**
- * Tab switcher between the popup's "API Mock" and "HTTP Rules" panels.
+ * Tab switcher between the popup's "API Mock" and "Redirect Rules" panels.
  *
  * @param props.value - The currently active tab.
  * @param props.onChange - Called with the newly selected tab.
@@ -26,8 +26,8 @@ export const PopupTabs = ({ value, onChange }: PopupTabsProps) => (
 			sx={{ minHeight: 0 }}
 		/>
 		<Tab
-			label="HTTP Rules"
-			value="http-rules"
+			label="Redirect Rules"
+			value="redirects"
 			icon={<RuleOutlinedIcon />}
 			iconPosition="start"
 			sx={{ minHeight: 0 }}

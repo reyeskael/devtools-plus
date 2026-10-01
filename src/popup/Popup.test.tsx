@@ -78,7 +78,7 @@ const addButton = () => screen.getByRole('button', { name: /^add$/i });
 
 const mockResponsesTab = () => screen.getByRole('tab', { name: /api mock/i });
 
-const httpRulesTab = () => screen.getByRole('tab', { name: /http rules/i });
+const redirectsTab = () => screen.getByRole('tab', { name: /redirect rules/i });
 
 const masterSwitch = () => screen.getByRole('switch', { name: /master switch/i });
 
@@ -131,13 +131,13 @@ describe('Popup', () => {
 			const tabs = screen.getAllByRole('tab');
 			expect(tabs).toHaveLength(2);
 			expect(tabs[0]).toHaveTextContent('API Mock');
-			expect(tabs[1]).toHaveTextContent('HTTP Rules');
+			expect(tabs[1]).toHaveTextContent('Redirect Rules');
 		});
 
 		it('selects the API Mock tab by default', () => {
 			render(<Popup />);
 			expect(mockResponsesTab()).toHaveAttribute('aria-selected', 'true');
-			expect(httpRulesTab()).toHaveAttribute('aria-selected', 'false');
+			expect(redirectsTab()).toHaveAttribute('aria-selected', 'false');
 		});
 	});
 
@@ -152,7 +152,7 @@ describe('Popup', () => {
 				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
 			}
 
-			await userEvent.click(httpRulesTab());
+			await userEvent.click(redirectsTab());
 
 			for (const item of fixtureMockResponses) {
 				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
@@ -160,33 +160,81 @@ describe('Popup', () => {
 		});
 	});
 
-	describe('http-rules placeholder', () => {
-		it('shows the under-construction placeholder instead of the seeded HTTP rules', async () => {
+	describe('redirects tab real list', () => {
+		it('shows the seeded redirects and not the mock responses once switched to the redirects tab', async () => {
 			render(<Popup />);
-			await userEvent.click(httpRulesTab());
+			await userEvent.click(redirectsTab());
 
-			expect(screen.getByText('HTTP Rules is under construction')).toBeInTheDocument();
 			for (const item of fixtureRedirects) {
+				expect(screen.getByText(item.name)).toBeInTheDocument();
+			}
+			for (const item of fixtureMockResponses) {
 				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
 			}
 
 			await userEvent.click(mockResponsesTab());
 
-			expect(
-				screen.queryByText('HTTP Rules is under construction'),
-			).not.toBeInTheDocument();
+			for (const item of fixtureRedirects) {
+				expect(screen.queryByText(item.name)).not.toBeInTheDocument();
+			}
 			for (const item of fixtureMockResponses) {
 				expect(screen.getByText(item.name)).toBeInTheDocument();
 			}
 		});
 
-		it('keeps the toolbar (Export/Import/Add) visible on the http-rules tab', async () => {
+		it('keeps the toolbar (Export/Import/Add) visible on the redirects tab', async () => {
 			render(<Popup />);
-			await userEvent.click(httpRulesTab());
+			await userEvent.click(redirectsTab());
 
 			expect(screen.getByRole('button', { name: 'Export' })).toBeInTheDocument();
 			expect(screen.getByRole('button', { name: 'Import' })).toBeInTheDocument();
 			expect(screen.getByRole('button', { name: /^add$/i })).toBeInTheDocument();
+		});
+
+		it('toggles only the targeted redirect item, leaving the other redirect row untouched', async () => {
+			render(<Popup />);
+			await userEvent.click(redirectsTab());
+			const target = fixtureRedirects[0];
+			const others = fixtureRedirects.filter((item) => item.id !== target.id);
+
+			expectRowSwitchChecked(target.name, target.enabled);
+			await userEvent.click(rowSwitch(target.name));
+			expectRowSwitchChecked(target.name, !target.enabled);
+
+			for (const item of others) {
+				expectRowSwitchChecked(item.name, item.enabled);
+			}
+		});
+
+		it('deletes only the targeted redirect item, leaving the other redirect row intact', async () => {
+			render(<Popup />);
+			await userEvent.click(redirectsTab());
+			const target = fixtureRedirects[0];
+			const remaining = fixtureRedirects.filter((item) => item.id !== target.id);
+
+			await userEvent.click(deleteButton(target.name));
+
+			expect(screen.queryByText(target.name)).not.toBeInTheDocument();
+			for (const item of remaining) {
+				expect(screen.getByText(item.name)).toBeInTheDocument();
+			}
+		});
+
+		it('shows the redirects empty-state copy once every redirect is deleted, and its action calls openApp with "redirects"', async () => {
+			render(<Popup />);
+			await userEvent.click(redirectsTab());
+			for (const item of fixtureRedirects) {
+				await userEvent.click(deleteButton(item.name));
+			}
+
+			expect(screen.getByText('No redirect rules yet')).toBeInTheDocument();
+			expect(
+				screen.getByText('Add a redirect rule in the full app to get started.'),
+			).toBeInTheDocument();
+
+			await userEvent.click(screen.getByRole('button', { name: /add redirect rule/i }));
+
+			expect(openApp).toHaveBeenCalledWith('redirects');
 		});
 	});
 
@@ -207,6 +255,14 @@ describe('Popup', () => {
 			await userEvent.click(screen.getByRole('button', { name: /add mock response/i }));
 
 			expect(openApp).toHaveBeenCalledWith('mock-api');
+		});
+
+		it('calls openApp with "redirects" when Add is clicked on the redirects tab', async () => {
+			render(<Popup />);
+			await userEvent.click(redirectsTab());
+			await userEvent.click(addButton());
+			expect(openApp).toHaveBeenCalledTimes(1);
+			expect(openApp).toHaveBeenCalledWith('redirects');
 		});
 	});
 

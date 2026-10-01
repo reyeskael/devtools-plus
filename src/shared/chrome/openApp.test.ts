@@ -13,9 +13,9 @@ describe('openApp', () => {
 		expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'src/app/index.html#/mock-api' });
 	});
 
-	it('opens the base app URL with a #/http-rules hash when called with "http-rules"', () => {
-		openApp('http-rules');
+	it('opens the base app URL with a #/redirects hash when called with "redirects"', () => {
+		openApp('redirects');
 
-		expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'src/app/index.html#/http-rules' });
+		expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'src/app/index.html#/redirects' });
 	});
 });

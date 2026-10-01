@@ -78,8 +78,8 @@ describe('AppRoutes', () => {
 		expect(screen.getByRole('heading', { name: /mock apis/i })).toBeInTheDocument();
 	});
 
-	it('renders the http rules placeholder at /http-rules', () => {
-		renderAtPath('/http-rules');
+	it('renders the http rules placeholder at /redirects', () => {
+		renderAtPath('/redirects');
 		expect(screen.getByText(/http rules — not yet implemented/i)).toBeInTheDocument();
 	});
 

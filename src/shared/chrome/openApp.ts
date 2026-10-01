@@ -1,4 +1,4 @@
-export type AppPage = 'mock-api' | 'http-rules';
+export type AppPage = 'mock-api' | 'redirects';
 
 /**
  * Opens the full-page app in a new tab, optionally deep-linked to a page via a URL hash route.

@@ -12,16 +12,16 @@ describe('PopupTabs', () => {
 		render(<PopupTabs value="mock-responses" onChange={jest.fn()} />);
 		const tabs = screen.getAllByRole('tab');
 		expect(tabs[0]).toHaveTextContent('API Mock');
-		expect(tabs[1]).toHaveTextContent('HTTP Rules');
+		expect(tabs[1]).toHaveTextContent('Redirect Rules');
 	});
 
 	it('marks only the tab matching the value prop as selected', () => {
-		render(<PopupTabs value="http-rules" onChange={jest.fn()} />);
+		render(<PopupTabs value="redirects" onChange={jest.fn()} />);
 		expect(screen.getByRole('tab', { name: /api mock/i })).toHaveAttribute(
 			'aria-selected',
 			'false',
 		);
-		expect(screen.getByRole('tab', { name: /http rules/i })).toHaveAttribute(
+		expect(screen.getByRole('tab', { name: /redirect rules/i })).toHaveAttribute(
 			'aria-selected',
 			'true',
 		);
@@ -35,17 +35,17 @@ describe('PopupTabs', () => {
 
 	it('calls onChange with "mock-responses" when the API Mock tab is clicked', async () => {
 		const onChange = jest.fn();
-		render(<PopupTabs value="http-rules" onChange={onChange} />);
+		render(<PopupTabs value="redirects" onChange={onChange} />);
 		await userEvent.click(screen.getByRole('tab', { name: /api mock/i }));
 		expect(onChange).toHaveBeenCalledTimes(1);
 		expect(onChange).toHaveBeenCalledWith('mock-responses');
 	});
 
-	it('calls onChange with "http-rules" when the HTTP Rules tab is clicked', async () => {
+	it('calls onChange with "redirects" when the Redirect Rules tab is clicked', async () => {
 		const onChange = jest.fn();
 		render(<PopupTabs value="mock-responses" onChange={onChange} />);
-		await userEvent.click(screen.getByRole('tab', { name: /http rules/i }));
+		await userEvent.click(screen.getByRole('tab', { name: /redirect rules/i }));
 		expect(onChange).toHaveBeenCalledTimes(1);
-		expect(onChange).toHaveBeenCalledWith('http-rules');
+		expect(onChange).toHaveBeenCalledWith('redirects');
 	});
 });

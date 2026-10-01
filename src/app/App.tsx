@@ -31,7 +31,7 @@ export const AppRoutes = ({ hook = useHashLocation }: AppRoutesProps = {}) => (
 					<MockEditorPage />
 				</Route>
 				<Route path="/mock-api/:id">{(params) => <MockEditorPage id={params.id} />}</Route>
-				<Route path="/http-rules" component={HttpRulesPlaceholder} />
+				<Route path="/redirects" component={HttpRulesPlaceholder} />
 				<Route>
 					<Redirect to="/mock-api" />
 				</Route>

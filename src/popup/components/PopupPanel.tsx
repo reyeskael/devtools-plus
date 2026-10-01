@@ -8,7 +8,6 @@ import { EmptyState } from './EmptyState';
 import { ItemRow, type ItemRowViewModel } from './ItemRow';
 import { PanelToolbar } from './PanelToolbar';
 import { PopupTabs, type PopupTabKey } from './PopupTabs';
-import { UnderConstruction } from './UnderConstruction';
 
 const PopupCard = styled(Paper, {
 	shouldForwardProp: (prop) => prop !== 'dimmed',
@@ -38,12 +37,12 @@ const TAB_CONFIG: Record<PopupTabKey, TabConfig> = {
 		emptyBody: 'Add a mock response in the full app to get started.',
 		emptyActionLabel: 'Add mock response',
 	},
-	'http-rules': {
+	redirects: {
 		kind: 'redirect',
-		page: 'http-rules',
-		emptyHeadline: 'No HTTP rules yet',
-		emptyBody: 'Add an HTTP rule in the full app to get started.',
-		emptyActionLabel: 'Add HTTP rule',
+		page: 'redirects',
+		emptyHeadline: 'No redirect rules yet',
+		emptyBody: 'Add a redirect rule in the full app to get started.',
+		emptyActionLabel: 'Add redirect rule',
 	},
 };
 
@@ -78,8 +77,8 @@ const getItemRows = (
 
 /**
  * The popup's tabbed panel card: a shared Export/Import/Add toolbar and tabs, followed by the
- * active tab's item list — or, for the not-yet-enforced HTTP Rules tab, an under-construction
- * placeholder in place of the list.
+ * active tab's item list — both the "API Mock" and "Redirect Rules" tabs render their items the
+ * same way.
  *
  * @returns The popup panel UI.
  */
@@ -93,37 +92,28 @@ export const PopupPanel = () => {
 		<PopupCard variant="outlined" dimmed={!isRunning}>
 			<PanelToolbar page={activeTabConfig.page} />
 			<PopupTabs value={activeTab} onChange={setActiveTab} />
-			{activeTab === 'http-rules' ? (
-				<UnderConstruction
-					headline="HTTP Rules is under construction"
-					body="Block, redirect, and modify-headers rules aren't enforced yet. Check back in a future update."
-				/>
-			) : (
-				<>
-					<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-						{itemRows.length === 0 ? (
-							<EmptyState
-								headline={activeTabConfig.emptyHeadline}
-								body={activeTabConfig.emptyBody}
-								actionLabel={activeTabConfig.emptyActionLabel}
-								onAction={() => openApp(activeTabConfig.page)}
+			<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+				{itemRows.length === 0 ? (
+					<EmptyState
+						headline={activeTabConfig.emptyHeadline}
+						body={activeTabConfig.emptyBody}
+						actionLabel={activeTabConfig.emptyActionLabel}
+						onAction={() => openApp(activeTabConfig.page)}
+					/>
+				) : (
+					<List sx={{ padding: '0px' }}>
+						{itemRows.map((item) => (
+							<ItemRow
+								key={item.id}
+								item={item}
+								isRunning={isRunning}
+								onToggleEnabled={(id) => toggleItem(activeTabConfig.kind, id)}
+								onDelete={(id) => removeItem(activeTabConfig.kind, id)}
 							/>
-						) : (
-							<List sx={{ padding: '0px' }}>
-								{itemRows.map((item) => (
-									<ItemRow
-										key={item.id}
-										item={item}
-										isRunning={isRunning}
-										onToggleEnabled={(id) => toggleItem(activeTabConfig.kind, id)}
-										onDelete={(id) => removeItem(activeTabConfig.kind, id)}
-									/>
-								))}
-							</List>
-						)}
-					</Box>
-				</>
-			)}
+						))}
+					</List>
+				)}
+			</Box>
 		</PopupCard>
 	);
 };

@@ -85,7 +85,7 @@ describe('PanelToolbar', () => {
 		expect(screen.getByTestId('OpenInNewIcon')).toBeInTheDocument();
 	});
 
-	it.each<AppPage>(['mock-api', 'http-rules'])(
+	it.each<AppPage>(['mock-api', 'redirects'])(
 		'calls openApp exactly once with the "%s" page when the Add button is clicked',
 		async (page) => {
 			const openAppMock = openApp as jest.Mock;
