@@ -12,6 +12,14 @@ const onChangedListeners = new Set<StorageListener>();
 (globalThis as unknown as { chrome: typeof chrome }).chrome = {
 	tabs: {
 		create: jest.fn(),
+		onUpdated: {
+			addListener: jest.fn(),
+			removeListener: jest.fn(),
+		},
+		onRemoved: {
+			addListener: jest.fn(),
+			removeListener: jest.fn(),
+		},
 	},
 	runtime: {
 		getURL: jest.fn((path: string) => path),
@@ -62,6 +70,10 @@ const onChangedListeners = new Set<StorageListener>();
 		),
 		updateDynamicRules: jest.fn(() => Promise.resolve()),
 		isRegexSupported: jest.fn(() => Promise.resolve({ isSupported: true })),
+		onRuleMatchedDebug: {
+			addListener: jest.fn(),
+			removeListener: jest.fn(),
+		},
 	},
 } as unknown as typeof chrome;
 
